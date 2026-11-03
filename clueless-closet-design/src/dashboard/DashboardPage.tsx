@@ -1,506 +1,278 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BUILT_IN, CLOSET_KEY, INITIAL_CLOSET, layerIds, migrateCloset, type ClosetState, type Item } from '../closet/data';
+import { BUILT_IN, CLOSET_KEY, EXTRAS, INITIAL_CLOSET, layerIds, migrateCloset, type ClosetState, type Item } from '../closet/data';
 import { Layers } from '../closet/Layers';
-import { ClothingArt, Hanger, Tri } from '../shared/icons';
+import { ClothingArt, Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
 import { OsWindow } from '../shared/OsWindow';
-import { readStored, usePersistentState } from '../shared/storage';
-import { ACCENT, DOWN, INK, PINK, UP } from '../shared/theme';
+import { readStored } from '../shared/storage';
+import { HANDLE, NAV, type View } from './data';
+import { Icon, type IconName } from './icons';
 import {
-  HANDLE, INITIAL_DASH, LEVELS, MONTHS, NAV, NEW_COLORS, NEW_SHAPES,
-  type Activity, type DashState,
-} from './data';
+  ActivityPanel, CalendarPanel, CodespacesPanel, ExplorePanel, FeaturedPanel, GistsPanel, IssuesPanel,
+  OrgsPanel, PrsPanel, ReposPanel, SpotlightPanel, StarsPanel,
+} from './panels';
+import { useDash } from './useDash';
 
-const PER_PAGE = 4;
+const NAV_ICON: Record<View, IconName> = {
+  home: 'home', repos: 'repo', prs: 'pr', issues: 'issue', codespaces: 'codespace',
+  stars: 'star', gists: 'gist', orgs: 'org', activity: 'heart',
+};
 
-function when(at: number) {
-  const d = new Date(at);
-  const today = new Date().toDateString() === d.toDateString();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  return today ? time : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
-}
-
-/** Outfit of the day = what the closet screen is currently wearing (falls back to the design's look). */
-function useOutfitOfTheDay(): { top: Item[]; bottom: Item } {
+/** Saved looks from the closet screen, resolved to items, for the lookbook. */
+function readLookbook() {
   const closet = migrateCloset({ ...INITIAL_CLOSET, ...readStored<ClosetState>(CLOSET_KEY, INITIAL_CLOSET) });
   const all = [...Object.values(BUILT_IN).flat(), ...(closet.added ?? [])];
   const find = (id: string | null | undefined) => all.find((i) => i.id === id);
-  const layers = layerIds(closet.wearing).map(find).filter((x): x is Item => !!x);
-  const top = layers.length ? layers : [BUILT_IN.jackets[1]];
-  const bottom = find(closet.wearing?.bottom) ?? BUILT_IN.skirts[0];
-  return { top, bottom };
+  return closet.saved.map((o, i) => ({
+    id: o.id,
+    n: closet.saved.length - i,
+    layers: layerIds(o).map(find).filter((x): x is Item => !!x),
+    bottom: find(o.bottom) ?? null,
+    extras: EXTRAS.map((c) => find(o.acc[c])).filter((x): x is Item => !!x),
+  }));
 }
 
 export function DashboardPage() {
-  const [s, setS] = usePersistentState<DashState>('dashboard', INITIAL_DASH, () =>
-    alert('That photo is too big to remember. Try a smaller image.'),
-  );
-  const [monthOff, setMonthOff] = useState(0);
+  const d = useDash();
+  const { s } = d;
   const [newOpen, setNewOpen] = useState(false);
-  const [newName, setNewName] = useState('');
-  const ootd = useOutfitOfTheDay();
-
-  const log = (activity: Activity[], text: string): Activity[] =>
-    [{ id: Date.now() + '-' + Math.random(), text, at: Date.now() }, ...activity].slice(0, 8);
+  const lookRef = useRef<HTMLDialogElement>(null);
+  const [looks, setLooks] = useState<ReturnType<typeof readLookbook>>([]);
 
   const v = s.view;
-  const openCount = s.prs.filter((p) => !p.merged).length;
-  const starCount = Object.values(s.starred).filter(Boolean).length;
-  const show = {
-    home: v === 'home',
-    repos: v === 'home' || v === 'repos',
-    prs: v === 'home' || v === 'prs',
-    cal: v === 'home' || v === 'cal',
-    activity: v === 'home' || v === 'activity',
-  };
-
-  // Repositories carousel
-  const n = s.repos.length;
-  const off = n ? ((s.off % n) + n) % n : 0;
-  const visibleRepos = Array.from({ length: Math.min(PER_PAGE, n) }, (_, i) => s.repos[(off + i) % n]);
-
-  const createRepo = (e: FormEvent) => {
-    e.preventDefault();
-    const name = newName.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-    if (!name) return;
-    setS((st) => {
-      const k = st.repos.length % NEW_SHAPES.length;
-      const repos = [
-        ...st.repos,
-        { id: name + Date.now(), name, tag: 'Fresh off the rack.', lang: 'New', shape: NEW_SHAPES[k], color: NEW_COLORS[k] },
-      ];
-      return { ...st, repos, off: Math.max(0, repos.length - PER_PAGE), activity: log(st.activity, `created ${HANDLE}/${name}`) };
-    });
-    setNewName('');
-    setNewOpen(false);
+  const counts: Partial<Record<View, number>> = {
+    prs: s.prs.filter((p) => !p.merged).length,
+    issues: s.issues.filter((i) => !i.closed).length,
   };
 
   const openNew = () => {
     setNewOpen(true);
-    if (!show.repos) setS((st) => ({ ...st, view: 'repos' }));
+    if (v !== 'home' && v !== 'repos') d.setView('repos');
   };
-
-  // Calendar for the real current month (+ offset)
-  const today = new Date();
-  const first = new Date(today.getFullYear(), today.getMonth() + monthOff, 1);
-  const y = first.getFullYear();
-  const m = first.getMonth();
-  const days = new Date(y, m + 1, 0).getDate();
-  const isThisMonth = y === today.getFullYear() && m === today.getMonth();
+  const openLookbook = () => {
+    setLooks(readLookbook());
+    if (!lookRef.current?.open) lookRef.current?.showModal();
+  };
+  const print = () => {
+    document.documentElement.classList.add('print-lookbook');
+    setTimeout(() => window.print(), 50);
+  };
+  const printLookbook = () => {
+    openLookbook();
+    print();
+  };
+  useEffect(() => {
+    const done = () => document.documentElement.classList.remove('print-lookbook');
+    window.addEventListener('afterprint', done);
+    return () => window.removeEventListener('afterprint', done);
+  }, []);
 
   return (
     <OsWindow
       app="dashboard"
+      variant="fashion"
       title="Code Closet.exe"
       subtitle="where my repos get dressed"
+      brand="GITHUB"
+      tagline={`${HANDLE.toUpperCase()}'S CODE CLOSET`}
       menus={[
-        { label: 'File', items: [{ label: 'New repo…', onSelect: openNew }] },
+        {
+          label: 'File',
+          items: [
+            { label: 'New repo…', onSelect: openNew },
+            { label: 'Preview lookbook', onSelect: openLookbook },
+            { label: 'Print lookbook…', onSelect: printLookbook },
+          ],
+        },
         {
           label: 'Edit',
           items: [
-            {
-              label: 'Unstar all repos',
-              disabled: starCount === 0,
-              onSelect: () => setS((st) => ({ ...st, starred: {} })),
-            },
-            {
-              label: 'Clear activity feed',
-              disabled: s.activity.length === 0,
-              onSelect: () => setS((st) => ({ ...st, activity: [] })),
-            },
+            { label: 'Unstar all repos', disabled: !Object.values(s.starred).some(Boolean), onSelect: d.unstarAll },
+            { label: 'Clear activity feed', disabled: s.activity.length === 0, onSelect: d.clearActivity },
           ],
         },
         {
           label: 'View',
-          items: NAV.map(([key, label]) => ({
+          items: [...NAV, ['activity', 'Activity'] as [View, string]].map(([key, label]) => ({
             label,
             checked: v === key,
-            onSelect: () => setS((st) => ({ ...st, view: key })),
+            onSelect: () => d.setView(key),
           })),
         },
         {
           label: 'Repos',
           items: [
-            { label: 'First repos', onSelect: () => setS((st) => ({ ...st, view: show.repos ? st.view : 'repos', off: 0 })) },
-            {
-              label: 'Last repos',
-              onSelect: () =>
-                setS((st) => ({ ...st, view: show.repos ? st.view : 'repos', off: Math.max(0, st.repos.length - PER_PAGE) })),
-            },
+            { label: 'First repos', onSelect: () => (d.setView(v === 'repos' ? 'repos' : 'home'), d.firstRepos()) },
+            { label: 'Last repos', onSelect: () => (d.setView(v === 'repos' ? 'repos' : 'home'), d.lastRepos()) },
             { separator: true },
-            {
-              label: 'Reset dashboard…',
-              onSelect: () =>
-                confirm('Reset the dashboard? Stars, reviews, calendar, new repos and activity are cleared.') &&
-                setS((st) => ({ ...INITIAL_DASH, avatar: st.avatar })),
-            },
+            { label: 'Reset dashboard…', onSelect: d.reset },
           ],
         },
-        { label: 'Help', items: [] },
       ]}
-      footer={
+      footer={(api) => (
         <>
-          <button type="button" className="btn" onClick={openNew}>
-            + New repo
-          </button>
-          <Link to="/" className="btn">
-            Save outfit
-          </Link>
-          <span className="sunk grow">{n} repos</span>
-          <span className="sunk grow">{starCount} starred</span>
-          <span className="sunk grow">{openCount} open reviews</span>
+          <span className="fx-pill-small px">
+            <Icon name="heart" size={11} /> GitHub for fashionistas <Icon name="heart" size={11} />
+          </span>
+          <div className="fx-tools">
+            <Link to="/" className="fx-tool px">
+              <Icon name="save" size={15} /> Save outfit
+            </Link>
+            <button type="button" className="fx-tool px" onClick={openNew}>
+              <Icon name="plus" size={15} /> New repo
+            </button>
+            <button type="button" className="fx-tool px" onClick={api.openImport} title="Import a backup file">
+              <Icon name="cd" size={15} /> Import CD
+            </button>
+            <button type="button" className="fx-tool px" onClick={printLookbook}>
+              <Icon name="print" size={15} /> Print lookbook
+            </button>
+            <button type="button" className="fx-tool px" onClick={openLookbook}>
+              <Icon name="eye" size={15} /> Preview
+            </button>
+            <button
+              type="button"
+              className={`fx-tool fx-sound${s.sound ? ' on' : ''}`}
+              aria-pressed={s.sound}
+              aria-label="Sound effects"
+              onClick={d.toggleSound}
+            >
+              <Icon name={s.sound ? 'sound' : 'mute'} size={16} />
+            </button>
+          </div>
         </>
-      }
+      )}
     >
-      <div className="content content-lilac">
-        <nav aria-label="Dashboard sections" className="sidebar">
-          <div className="avatar">
+      <div className="fx-content">
+        <nav aria-label="Dashboard sections" className="fx-side">
+          <label className="fx-avatar">
             {s.avatar ? (
               <img src={s.avatar} alt="Profile photo" className="cover" />
             ) : (
-              <svg className="sil" viewBox="0 0 100 100" width="130" height="130" aria-hidden="true">
+              <svg className="sil" viewBox="0 0 100 100" width="120" height="120" aria-hidden="true">
                 <circle cx="50" cy="38" r="18" />
                 <path d="M18 92 Q18 62 50 62 Q82 62 82 92 Z" />
               </svg>
             )}
-          </div>
-          <label className="upload upload-center px">
-            Upload your photo
-            <input
-              type="file"
-              accept="image/*"
-              className="sr"
-              onChange={pickImage(480, (url) => setS((st) => ({ ...st, avatar: url })))}
-            />
+            <span className="fx-avatar-cap px">
+              <Icon name="camera" size={12} /> {s.avatar ? 'Change photo' : 'Upload your photo'}
+            </span>
+            <input type="file" accept="image/*" className="sr" onChange={pickImage(480, (url) => d.setAvatar(url))} />
           </label>
-          <div className="namecard">
+
+          <div className="fx-namecard">
             <strong className="px">{HANDLE}</strong>
-            <span>Geel, Belgium</span>
-            <span>totally coding</span>
+            <span>
+              <Icon name="pin" size={13} /> Geel, Belgium
+            </span>
+            <span>
+              totally coding <Icon name="sparkle" size={12} className="fx-goldico" />
+            </span>
           </div>
+
           {NAV.map(([key, label]) => {
             const on = v === key;
+            const count = counts[key];
             return (
               <button
                 key={key}
                 type="button"
-                className="tab nav-tab"
+                className={`fx-nav px${on ? ' on' : ''}`}
                 aria-pressed={on}
-                onClick={() => setS((st) => ({ ...st, view: key }))}
-                style={{ background: on ? ACCENT : '#D4D0E0', color: on ? '#FFFFFF' : INK, borderColor: on ? DOWN : UP }}
+                onClick={() => d.setView(key)}
               >
-                <span>{label}</span>
-                {key === 'prs' && openCount > 0 && (
-                  <span className="cnt" aria-label={`${openCount} open`}>
-                    {openCount}
+                <Icon name={NAV_ICON[key]} size={17} />
+                <span className="fx-nav-label">{label}</span>
+                {!!count && (
+                  <span className="fx-count" aria-label={`${count} open`}>
+                    {count}
                   </span>
                 )}
               </button>
             );
           })}
-          <Link to="/" className="btn" style={{ justifyContent: 'flex-start' }}>
-            <Hanger size={18} />
-            My closet
+
+          <Link to="/" className="fx-nav px fx-nav-closet">
+            <Hanger size={17} />
+            <span className="fx-nav-label">My closet</span>
           </Link>
         </nav>
 
-        <main className="dash-main">
-          {show.repos && (
-            <section className="panel" aria-labelledby="h-repos">
-              <div className="ph">
-                <h2 id="h-repos" className="px">
-                  My repositories (aka my outfits)
-                </h2>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button type="button" className="mini" onClick={() => setS((st) => ({ ...st, off: 0 }))} aria-label="First repositories">
-                    <Tri dir="left" double width={20} height={12} />
-                  </button>
-                  <button type="button" className="mini" onClick={() => setS((st) => ({ ...st, off: st.off - 1 }))} aria-label="Previous repository">
-                    <Tri dir="left" width={12} height={12} />
-                  </button>
-                  <button type="button" className="mini" onClick={() => setS((st) => ({ ...st, off: st.off + 1 }))} aria-label="Next repository">
-                    <Tri dir="right" width={12} height={12} />
-                  </button>
-                  <button
-                    type="button"
-                    className="mini"
-                    onClick={() => setS((st) => ({ ...st, off: Math.max(0, st.repos.length - PER_PAGE) }))}
-                    aria-label="Last repositories"
-                  >
-                    <Tri dir="right" double width={20} height={12} />
-                  </button>
-                </div>
+        <main className="fx-main">
+          {v === 'home' && (
+            <>
+              <ReposPanel d={d} full={false} newOpen={newOpen} onCloseNew={() => setNewOpen(false)} />
+              <div className="fx-row-panels">
+                <PrsPanel d={d} full={false} />
+                <CalendarPanel d={d} />
+                <SpotlightPanel d={d} />
               </div>
-              <div className="repo-grid">
-                {visibleRepos.map((r) => {
-                  const on = !!s.starred[r.id];
-                  return (
-                    <article key={r.id} className="repo">
-                      <div className="repo-head">
-                        <h3 title={`${HANDLE}/${r.name}`}>
-                          {HANDLE}/{r.name}
-                        </h3>
-                        <span aria-hidden="true" className="px" style={{ fontSize: 11 }}>
-                          ···
-                        </span>
-                      </div>
-                      <div className="repo-art">
-                        <ClothingArt shape={r.shape} color={r.color} />
-                      </div>
-                      <div className="repo-body">
-                        <span style={{ fontSize: 13 }}>{r.tag}</span>
-                        <div className="repo-meta">
-                          <span className="chip">{r.lang}</span>
-                          <button
-                            type="button"
-                            className="tab tab-sm"
-                            aria-pressed={on}
-                            aria-label={`${on ? 'Unstar' : 'Star'} ${r.name}`}
-                            onClick={() =>
-                              setS((st) => {
-                                const now = !st.starred[r.id];
-                                return {
-                                  ...st,
-                                  starred: { ...st.starred, [r.id]: now },
-                                  activity: now ? log(st.activity, `starred ${HANDLE}/${r.name}`) : st.activity,
-                                };
-                              })
-                            }
-                            style={{ background: on ? ACCENT : '#D4D0E0', color: on ? '#FFFFFF' : INK, borderColor: on ? DOWN : UP }}
-                          >
-                            {on ? 'Starred' : 'Star'}
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="fx-row-panels">
+                <ActivityPanel d={d} full={false} />
+                <ExplorePanel d={d} />
+                <FeaturedPanel d={d} />
               </div>
-              {newOpen && (
-                <form className="new-repo" onSubmit={createRepo}>
-                  <label htmlFor="newrepo">New repo name</label>
-                  <input
-                    id="newrepo"
-                    type="text"
-                    value={newName}
-                    autoFocus
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="e.g. velvet-router"
-                    className="field"
-                  />
-                  <button type="submit" className="btn btn-accent">
-                    Create
-                  </button>
-                  <button type="button" className="btn" onClick={() => setNewOpen(false)}>
-                    Cancel
-                  </button>
-                </form>
-              )}
-            </section>
+            </>
           )}
-
-          <div className="panel-row">
-            {show.prs && (
-              <section className="panel" aria-labelledby="h-prs" style={{ flex: '1 1 340px' }}>
-                <div className="ph">
-                  <h2 id="h-prs" className="px">
-                    Pull requests (fashion reviews)
-                  </h2>
-                </div>
-                <ul className="list">
-                  {s.prs.map((p, idx) => (
-                    <li key={p.num} className="pr">
-                      <span aria-hidden="true" className="px pr-initial">
-                        {p.user.charAt(0).toUpperCase()}
-                      </span>
-                      <div className="pr-text">
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{p.title}</span>
-                        <span className="muted" style={{ fontSize: 12 }}>
-                          #{p.num} · {p.user}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="tab tab-sm"
-                        aria-pressed={p.merged}
-                        aria-label={`#${p.num} ${p.merged ? 'merged, mark open' : 'open, mark merged'}`}
-                        onClick={() =>
-                          setS((st) => {
-                            const prs = st.prs.slice();
-                            prs[idx] = { ...prs[idx], merged: !prs[idx].merged };
-                            return {
-                              ...st,
-                              prs,
-                              activity: prs[idx].merged ? log(st.activity, `merged #${p.num} ${p.title}`) : st.activity,
-                            };
-                          })
-                        }
-                        style={{ background: p.merged ? ACCENT : PINK, color: '#FFFFFF', borderColor: p.merged ? DOWN : UP }}
-                      >
-                        {p.merged ? 'Merged' : 'Open'}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-
-            {show.cal && (
-              <section className="panel" aria-labelledby="h-cal" style={{ flex: '1 1 300px' }}>
-                <div className="ph">
-                  <h2 id="h-cal" className="px">
-                    Contribution calendar
-                  </h2>
-                </div>
-                <div className="cal">
-                  <div className="cal-head">
-                    <button type="button" className="mini" onClick={() => setMonthOff((o) => o - 1)} aria-label="Previous month">
-                      <Tri dir="left" width={12} height={12} />
-                    </button>
-                    <span className="px" style={{ fontSize: 14 }} aria-live="polite">
-                      {MONTHS[m]} {y}
-                    </span>
-                    <button type="button" className="mini" onClick={() => setMonthOff((o) => o + 1)} aria-label="Next month">
-                      <Tri dir="right" width={12} height={12} />
-                    </button>
-                  </div>
-                  <div aria-hidden="true" className="cal-grid cal-dow">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                      <span key={i}>{d}</span>
-                    ))}
-                  </div>
-                  <div className="cal-grid">
-                    {Array.from({ length: first.getDay() }, (_, i) => (
-                      <span key={'b' + i} />
-                    ))}
-                    {Array.from({ length: days }, (_, i) => {
-                      const day = i + 1;
-                      const key = `${y}-${m}-${day}`;
-                      const lv = s.cal[key] ?? 0;
-                      const isToday = isThisMonth && day === today.getDate();
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          className={`cell${isToday ? ' cell-today' : ''}`}
-                          aria-label={`${MONTHS[m]} ${day}${isToday ? ' (today)' : ''}, level ${lv} of 4`}
-                          onClick={() =>
-                            setS((st) => {
-                              const next = ((st.cal[key] ?? 0) + 1) % 5;
-                              return {
-                                ...st,
-                                cal: { ...st.cal, [key]: next },
-                                activity: next === 1 ? log(st.activity, `logged code on ${MONTHS[m].slice(0, 3)} ${day}`) : st.activity,
-                              };
-                            })
-                          }
-                          style={{ background: LEVELS[lv], color: lv >= 3 ? '#FFFFFF' : INK }}
-                        >
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="legend">
-                    <span>Less</span>
-                    {LEVELS.map((c) => (
-                      <span key={c} aria-hidden="true" className="swatch" style={{ background: c }} />
-                    ))}
-                    <span>More</span>
-                  </div>
-                  <span className="muted" style={{ fontSize: 12 }}>
-                    Click a day to log how much you coded.
-                  </span>
-                </div>
-              </section>
-            )}
-
-            {show.home && (
-              <section className="panel" aria-labelledby="h-spot" style={{ flex: '1 1 200px' }}>
-                <div className="ph ph-pink">
-                  <h2 id="h-spot" className="px">
-                    Outfit of the day
-                  </h2>
-                </div>
-                <div className="ootd">
-                  <Layers items={ootd.top} w={140} h={110} />
-                  <div style={{ width: 140, height: 90 }}>
-                    <ClothingArt shape={ootd.bottom.shape} color={ootd.bottom.color} img={ootd.bottom.img} />
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
-                    {[...ootd.top, ootd.bottom].map((i) => i.name).join(' + ')}
-                  </span>
-                  <Link to="/" className="btn" style={{ fontSize: 12 }}>
-                    Open in closet
-                  </Link>
-                </div>
-              </section>
-            )}
-          </div>
-
-          <div className="panel-row">
-            {show.activity && (
-              <section className="panel" aria-labelledby="h-act" style={{ flex: '2 1 380px' }}>
-                <div className="ph">
-                  <h2 id="h-act" className="px">
-                    Activity feed (what's hot)
-                  </h2>
-                </div>
-                {s.activity.length ? (
-                  <ul className="list">
-                    {s.activity.map((a) => (
-                      <li key={a.id} className="act">
-                        <span>
-                          <strong>{HANDLE}</strong> {a.text}
-                        </span>
-                        <span className="muted" style={{ flex: 'none' }}>
-                          {when(a.at)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="hint" style={{ padding: '14px 12px' }}>
-                    Star a repo, merge a review or log a day and it shows up here.
-                  </p>
-                )}
-              </section>
-            )}
-
-            {show.home && (
-              <section className="panel" aria-labelledby="h-feat" style={{ flex: '1 1 260px' }}>
-                <div className="ph">
-                  <h2 id="h-feat" className="px">
-                    Featured collection
-                  </h2>
-                </div>
-                <div className="feat">
-                  <strong style={{ fontSize: 15 }}>90s dev diva starter kit</strong>
-                  <span className="muted" style={{ fontSize: 13 }}>
-                    A pixel font, beveled buttons and a plaid wallpaper for your next side project.
-                  </span>
-                  <button
-                    type="button"
-                    className="tab"
-                    aria-pressed={s.installed}
-                    onClick={() =>
-                      setS((st) => ({
-                        ...st,
-                        installed: !st.installed,
-                        activity: !st.installed ? log(st.activity, 'installed 90s dev diva starter kit') : st.activity,
-                      }))
-                    }
-                    style={{ background: s.installed ? ACCENT : PINK, color: '#FFFFFF', borderColor: s.installed ? DOWN : UP }}
-                  >
-                    {s.installed ? 'Installed' : 'Install look'}
-                  </button>
-                </div>
-              </section>
-            )}
-          </div>
+          {v === 'repos' && <ReposPanel d={d} full newOpen={newOpen} onCloseNew={() => setNewOpen(false)} />}
+          {v === 'prs' && <PrsPanel d={d} full />}
+          {v === 'issues' && <IssuesPanel d={d} />}
+          {v === 'codespaces' && <CodespacesPanel d={d} />}
+          {v === 'stars' && <StarsPanel d={d} />}
+          {v === 'gists' && <GistsPanel d={d} />}
+          {v === 'orgs' && <OrgsPanel d={d} />}
+          {v === 'activity' && <ActivityPanel d={d} full />}
         </main>
       </div>
+
+      <dialog ref={lookRef} className="about lookbook" aria-labelledby="lookbook-title">
+        <div className="titlebar about-bar">
+          <div className="titlebar-left">
+            <Icon name="heart" size={16} />
+            <h2 id="lookbook-title" className="px">
+              {HANDLE}'s lookbook
+            </h2>
+          </div>
+          <button type="button" className="wbtn wbtn-close" aria-label="Close" onClick={() => lookRef.current?.close()}>
+            x
+          </button>
+        </div>
+        <div className="about-body">
+          {looks.length ? (
+            <ol className="fx-looks">
+              {looks.map((l) => (
+                <li key={l.id} className="fx-look">
+                  <span className="px fx-small">Look {l.n}</span>
+                  <Layers items={l.layers} w={110} h={90} />
+                  {l.bottom && (
+                    <div style={{ width: 110, height: 90 }}>
+                      <ClothingArt shape={l.bottom.shape} color={l.bottom.color} img={l.bottom.img} />
+                    </div>
+                  )}
+                  <span className="fx-small">
+                    {[...l.layers, ...(l.bottom ? [l.bottom] : []), ...l.extras].map((i) => i.name).join(', ')}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>
+              No saved looks yet. Build an outfit in <Link to="/">My Closet</Link> and hit Save outfit.
+            </p>
+          )}
+          <div className="fx-dialog-actions">
+            {looks.length > 0 && (
+              <button type="button" className="btn" onClick={print}>
+                Print
+              </button>
+            )}
+            <button type="button" className="btn btn-accent" onClick={() => lookRef.current?.close()}>
+              OK
+            </button>
+          </div>
+        </div>
+      </dialog>
     </OsWindow>
   );
 }

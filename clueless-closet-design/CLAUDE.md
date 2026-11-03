@@ -35,13 +35,19 @@ paths, sample data and behaviour from them, and rebuild everything as normal Rea
 
 ## Dashboard screen
 
-- Sidebar: avatar upload, name card (ivailipm, Geel, Belgium), nav (Home, Repositories, Pull requests with
-  open count, Calendar, Activity) that filters the panels, link back to the closet
-- Repositories as outfit cards: carousel of 4, star toggle, "+ New repo" form
-- Pull requests: Open toggles to Merged
-- Contribution calendar: real current month, month navigation, clicking a day steps its level 0-4
-- Activity feed built from the user's actions; outfit of the day; featured collection with Install look
-- No invented stats: stars, reviews and calendar start empty and fill in from use
+The dashboard follows a newer reference than `design/dashboard.design.html`: a "GitHub for fashionistas" look
+(royal-blue frame, leopard-print background inside the window, beige sidebar buttons with icons, blue panel
+headers with pink hearts, pink OPEN buttons, bottom toolbar). Layout and behaviour from the design file still apply.
+
+- Top strip: menus, centred pill "♥ GITHUB ♥ < IVAILIPM'S CODE CLOSET >", Sign out (back to the closet), Help, ?
+- Sidebar: avatar upload, name card (ivailipm, Geel, Belgium, totally coding), nav: Home, Repositories,
+  Pull requests (open count), Issues (open count), Codespaces, Stars, Gists, Organizations, link to the closet
+- Home: repositories carousel of 4; pull requests | contribution calendar | spotlight photo;
+  activity feed | explore (own repos ranked by stars, forks, codespaces) | featured collection
+- Repo cards: star toggle with count, forks, language, "Updated …"; ··· menu: open in codespace, fork, delete
+- Pull requests and issues toggle Open/Merged or Open/Closed and take comments; codespaces take pushes
+- Bottom toolbar: Save outfit, New repo, Import CD (backup import), Print lookbook, Preview (saved closet looks), sound
+- No invented stats: stars, forks, comments, updated times, calendar and activity start empty and fill in from use
 
 ## Conventions
 
