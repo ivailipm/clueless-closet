@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ClothingArt } from '../shared/icons';
-import { ago, HANDLE, type Comment, type Repo } from './data';
+import { STYLES, STYLE_COLOR, type Collection, type Style } from '../closet/data';
+import { OutfitThumb } from '../closet/OutfitThumb';
+import type { GetItem } from '../closet/store';
+import { ago, HANDLE, type Comment } from './data';
 import { Icon, type IconName } from './icons';
 
 /** Blue-headed panel with a pink heart, an optional (subtitle), header buttons and a "VIEW ALL »" footer. */
@@ -90,56 +92,73 @@ function MoreMenu({ label, items }: { label: string; items: { label: string; onS
   );
 }
 
+/** A collection of outfits shown as a repo card. */
 export function RepoCard(p: {
-  repo: Repo;
-  starred: boolean;
+  col: Collection;
+  get: GetItem;
+  onOpen: () => void;
   onStar: () => void;
+  onStyle: (s: Style) => void;
   onFork: () => void;
   onCode: () => void;
+  onRename: () => void;
   onDelete: () => void;
 }) {
-  const r = p.repo;
+  const c = p.col;
+  const n = c.outfits.length;
   return (
     <article className="fx-repo">
       <div className="fx-repo-head">
-        <h3 title={`${HANDLE}/${r.name}`}>
-          {HANDLE}/{r.name}
+        <h3 title={`${HANDLE}/${c.name}`}>
+          {HANDLE}/{c.name}
         </h3>
         <MoreMenu
-          label={`More actions for ${r.name}`}
+          label={`More actions for ${c.name}`}
           items={[
+            { label: 'Open collection', onSelect: p.onOpen },
             { label: 'Open in codespace', onSelect: p.onCode },
             { label: 'Fork', onSelect: p.onFork },
-            { label: 'Delete repo…', onSelect: p.onDelete },
+            { label: 'Rename…', onSelect: p.onRename },
+            { label: 'Delete collection…', onSelect: p.onDelete },
           ]}
         />
       </div>
-      <div className="fx-repo-art">
-        <ClothingArt shape={r.shape} color={r.color} />
-      </div>
+      <button type="button" className="fx-repo-art" onClick={p.onOpen} aria-label={`Open ${c.name}`}>
+        {n ? <OutfitThumb look={c.outfits[0]} get={p.get} /> : <span className="fx-repo-empty px">No outfits yet</span>}
+      </button>
       <div className="fx-repo-body">
         <span className="fx-repo-tag">
           <span>
-            {r.tag}
-            {r.forkOf && <span className="fx-muted"> · forked from {r.forkOf}</span>}
+            {n} outfit{n === 1 ? '' : 's'}
+            {c.forkOf && <span className="fx-muted"> · forked from {c.forkOf}</span>}
           </span>
-          <span className="fx-chip">{r.lang}</span>
+          <select
+            className="fx-chip fx-chip-select"
+            aria-label={`Style of ${c.name}`}
+            value={c.style}
+            onChange={(e) => p.onStyle(e.target.value as Style)}
+            style={{ background: STYLE_COLOR[c.style] }}
+          >
+            {STYLES.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
         </span>
         <div className="fx-repo-stats">
           <button
             type="button"
-            className={`fx-star${p.starred ? ' on' : ''}`}
-            aria-pressed={p.starred}
-            aria-label={`${p.starred ? 'Unstar' : 'Star'} ${r.name}, ${p.starred ? 1 : 0} stars`}
+            className={`fx-star${c.starred ? ' on' : ''}`}
+            aria-pressed={c.starred}
+            aria-label={`${c.starred ? 'Unstar' : 'Star'} ${c.name}, ${c.starred ? 1 : 0} stars`}
             onClick={p.onStar}
           >
-            <Icon name="star" size={15} /> {p.starred ? 1 : 0}
+            <Icon name="star" size={15} /> {c.starred ? 1 : 0}
           </button>
-          <span className="fx-forks" aria-label={`${r.forks} forks`}>
-            <Icon name="fork" size={15} /> {r.forks}
+          <span className="fx-forks" aria-label={`${c.forks} forks`}>
+            <Icon name="fork" size={15} /> {c.forks}
           </span>
         </div>
-        <span className="fx-updated">{r.updatedAt ? `Updated ${ago(r.updatedAt)}` : 'No updates yet'}</span>
+        <span className="fx-updated">{c.updatedAt ? `Updated ${ago(c.updatedAt)}` : 'No updates yet'}</span>
       </div>
     </article>
   );

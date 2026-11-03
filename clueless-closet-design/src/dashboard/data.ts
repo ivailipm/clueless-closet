@@ -1,25 +1,11 @@
-import type { ShapeName } from '../shared/theme';
-
 export const HANDLE = 'ivailipm';
 
 export type Comment = { id: string; text: string; at: number };
 
-export type Repo = {
-  id: string;
-  name: string;
-  tag: string;
-  lang: string;
-  shape: ShapeName;
-  color: string;
-  /** Times this repo was forked from the card menu. */
-  forks: number;
-  /** Last time something happened to it; null until then. */
-  updatedAt: number | null;
-  forkOf?: string;
-};
 export type Pr = { num: number; user: string; title: string; merged: boolean; comments: Comment[] };
 export type Issue = { num: number; title: string; closed: boolean; createdAt: number | null; comments: Comment[] };
 export type Gist = { id: string; title: string; body: string; at: number };
+/** A collection opened in the "fitting room" (codespaces); `repoId` is the collection id. */
 export type Codespace = { repoId: string; openedAt: number };
 export type Org = { id: string; name: string; about: string; at: number };
 
@@ -30,22 +16,6 @@ export type Activity = { id: string; kind: ActivityKind; text: string; at: numbe
 
 /** 'activity' has no sidebar button; it is reached from the feed's "View all". */
 export type View = 'home' | 'repos' | 'prs' | 'issues' | 'codespaces' | 'stars' | 'gists' | 'orgs' | 'activity';
-
-export const NEW_SHAPES: ShapeName[] = ['jacket', 'tee', 'bag', 'skirt', 'knit', 'hat', 'pants'];
-export const NEW_COLORS = ['#E8C547', '#E86A92', '#C9A37A', '#6F8FBF', '#F4A9C0', '#A9BFA0', '#9DB8D9'];
-
-const repo = (name: string, tag: string, lang: string, shape: ShapeName, color: string): Repo => ({
-  id: name, name, tag, lang, shape, color, forks: 0, updatedAt: null,
-});
-
-export const REPOS: Repo[] = [
-  repo('closet-core', 'The classic.', 'PHP', 'jacket', '#E8C547'),
-  repo('pretty-utils', 'Pretty. Useful.', 'JavaScript', 'tee', '#E86A92'),
-  repo('mall-style-ui', 'UI components', 'TypeScript', 'bag', '#C9A37A'),
-  repo('plaid-api', 'A REST API, as if!', 'C#', 'skirt', '#6F8FBF'),
-  repo('sweater-weather', 'Cosy weather widget', 'Python', 'knit', '#F4A9C0'),
-  repo('accessory-hooks', 'Hooks for every look', 'React', 'hat', '#A9BFA0'),
-];
 
 export const PRS: Pr[] = [
   { num: 128, user: 'glam-user', title: 'feat: add sparkle to buttons', merged: false, comments: [] },
@@ -81,9 +51,8 @@ export type DashState = {
   view: View;
   avatar: string | null;
   spotlight: string | null;
+  /** Carousel position in the collections ("repositories") panel. */
   off: number;
-  repos: Repo[];
-  starred: Record<string, boolean>;
   prs: Pr[];
   issues: Issue[];
   gists: Gist[];
@@ -101,8 +70,6 @@ export const INITIAL_DASH: DashState = {
   avatar: null,
   spotlight: null,
   off: 0,
-  repos: REPOS,
-  starred: {},
   prs: PRS,
   issues: ISSUES,
   gists: [],
@@ -117,12 +84,15 @@ export const INITIAL_DASH: DashState = {
 export const MAX_ACTIVITY = 40;
 
 /** Fill in fields added after the first version so older saves keep working. */
-export function migrateDash(st: DashState): DashState {
+export function migrateDash(raw: DashState & { repos?: unknown; starred?: unknown }): DashState {
+  // Repos used to be sample data here; they are now the closet's outfit collections.
+  const { repos: _repos, starred: _starred, ...st } = raw;
+  void _repos;
+  void _starred;
   const views: View[] = [...NAV.map(([v]) => v), 'activity'];
   return {
     ...st,
     view: views.includes(st.view) ? st.view : 'home',
-    repos: st.repos.map((r) => ({ ...r, forks: r.forks ?? 0, updatedAt: r.updatedAt ?? null })),
     prs: st.prs.map((p) => ({ ...p, comments: p.comments ?? [] })),
     activity: st.activity.map((a) => ({
       ...a,

@@ -1,16 +1,17 @@
+import * as cols from '../closet/collections';
+import type { Collection, Style } from '../closet/data';
+import { useClosetState, useItems } from '../closet/store';
 import { usePersistentState } from '../shared/storage';
 import {
-  HANDLE, INITIAL_DASH, MAX_ACTIVITY, MONTHS, NEW_COLORS, NEW_SHAPES, migrateDash,
-  type ActivityKind, type Comment, type DashState, type Repo, type View,
+  HANDLE, INITIAL_DASH, MAX_ACTIVITY, MONTHS, migrateDash,
+  type ActivityKind, type Comment, type DashState, type View,
 } from './data';
 
 export const PER_PAGE = 4;
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-/** Turn free text into a repo-style name: "Velvet Router!" → "velvet-router". */
-export const slug = (s: string) =>
-  s.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+export const slug = cols.slug;
 
 let audio: AudioContext | null = null;
 /** A tiny retro "blip" for when sound is on. */
@@ -38,6 +39,10 @@ export function useDash() {
     () => alert('That photo is too big to remember. Try a smaller image.'),
     migrateDash,
   );
+  // Repositories are the closet's outfit collections.
+  const [closet, setCloset] = useClosetState();
+  const collections = closet.collections;
+  const { get } = useItems(closet.added);
 
   /** Apply a change and add a line to the activity feed. */
   const act = (kind: ActivityKind, text: string, change: (st: DashState) => Partial<DashState>) => {
@@ -49,78 +54,81 @@ export function useDash() {
     }));
   };
   const set = (change: (st: DashState) => Partial<DashState>) => setS((st) => ({ ...st, ...change(st) }));
-  const touch = (repos: Repo[], id: string, extra: Partial<Repo> = {}) =>
-    repos.map((r) => (r.id === id ? { ...r, ...extra, updatedAt: Date.now() } : r));
   const comment = (text: string): Comment => ({ id: uid(), text: text.trim(), at: Date.now() });
+  const log = (kind: ActivityKind, text: string) => act(kind, text, () => ({}));
 
   const actions = {
     setView: (view: View) => set(() => ({ view })),
     setAvatar: (avatar: string | null) => set(() => ({ avatar })),
     setSpotlight: (spotlight: string | null) => set(() => ({ spotlight })),
 
-    // Repositories
+    // Repositories = outfit collections
     shiftRepos: (d: number) => set((st) => ({ off: st.off + d })),
     firstRepos: () => set(() => ({ off: 0 })),
-    lastRepos: () => set((st) => ({ off: Math.max(0, st.repos.length - PER_PAGE) })),
-    toggleStar: (r: Repo) => {
-      const on = !s.starred[r.id];
-      if (on) act('star', `starred ${HANDLE}/${r.name}`, (st) => ({ starred: { ...st.starred, [r.id]: true } }));
-      else set((st) => ({ starred: { ...st.starred, [r.id]: false } }));
+    lastRepos: () => set(() => ({ off: Math.max(0, collections.length - PER_PAGE) })),
+    toggleStar: (c: Collection) => {
+      setCloset((st) => cols.toggleStar(st, c.id));
+      if (!c.starred) log('star', `starred ${HANDLE}/${c.name}`);
     },
-    createRepo: (raw: string) => {
-      const name = slug(raw);
-      if (!name) return false;
-      if (s.repos.some((r) => r.name === name)) {
-        alert(`You already have a repo called ${name}.`);
-        return false;
-      }
-      act('create', `created ${HANDLE}/${name}`, (st) => {
-        const k = st.repos.length % NEW_SHAPES.length;
-        const repos: Repo[] = [
-          ...st.repos,
-          {
-            id: name + '-' + uid(), name, tag: 'Fresh off the rack.', lang: 'New',
-            shape: NEW_SHAPES[k], color: NEW_COLORS[k], forks: 0, updatedAt: Date.now(),
-          },
-        ];
-        return { repos, off: Math.max(0, repos.length - PER_PAGE) };
-      });
+    createRepo: (raw: string, style: Style) => {
+      const made = cols.createCollection(closet, raw, style);
+      if (!made) return false;
+      setCloset(made.state);
+      act('create', `created ${HANDLE}/${made.col.name}`, () => ({
+        off: Math.max(0, made.state.collections.length - PER_PAGE),
+      }));
       return true;
     },
-    forkRepo: (r: Repo) => {
-      let name = `${r.name}-fork`;
-      for (let i = 2; s.repos.some((x) => x.name === name); i++) name = `${r.name}-fork-${i}`;
-      act('fork', `forked ${HANDLE}/${r.name} to ${HANDLE}/${name}`, (st) => ({
-        repos: [
-          ...st.repos.map((x) => (x.id === r.id ? { ...x, forks: x.forks + 1 } : x)),
-          { ...r, id: name + '-' + uid(), name, forks: 0, updatedAt: Date.now(), forkOf: r.name },
-        ],
+    forkRepo: (c: Collection) => {
+      const made = cols.forkCollection(closet, c.id);
+      if (!made) return;
+      setCloset(made.state);
+      log('fork', `forked ${HANDLE}/${c.name} to ${HANDLE}/${made.col.name}`);
+    },
+    deleteRepo: (c: Collection) => {
+      const n = c.outfits.length;
+      if (!confirm(`Delete ${HANDLE}/${c.name}${n ? ` and its ${n} outfit${n > 1 ? 's' : ''}` : ''}?`)) return;
+      setCloset((st) => cols.deleteCollection(st, c.id));
+      act('delete', `deleted ${HANDLE}/${c.name}`, (st) => ({
+        codespaces: st.codespaces.filter((x) => x.repoId !== c.id),
       }));
     },
-    deleteRepo: (r: Repo) => {
-      if (!confirm(`Delete ${HANDLE}/${r.name}? Its stars and codespace go too.`)) return;
-      act('delete', `deleted ${HANDLE}/${r.name}`, (st) => {
-        const { [r.id]: _gone, ...starred } = st.starred;
-        void _gone;
-        return {
-          repos: st.repos.filter((x) => x.id !== r.id),
-          starred,
-          codespaces: st.codespaces.filter((c) => c.repoId !== r.id),
-        };
-      });
+    setStyle: (c: Collection, style: Style) => setCloset((st) => cols.setStyle(st, c.id, style)),
+    renameRepo: (c: Collection, raw: string) => {
+      const next = cols.renameCollection(closet, c.id, raw);
+      if (!next) return false;
+      setCloset(next);
+      const name = next.collections.find((x) => x.id === c.id)!.name;
+      if (name !== c.name) log('push', `renamed ${HANDLE}/${c.name} to ${HANDLE}/${name}`);
+      return true;
+    },
+    removeOutfit: (c: Collection, outfitId: string, name: string) => {
+      if (!confirm(`Remove "${name}" from ${c.name}?`)) return;
+      setCloset((st) => cols.removeOutfit(st, c.id, outfitId));
+      log('delete', `removed "${name}" from ${HANDLE}/${c.name}`);
+    },
+    /** Put an outfit on in the closet (the caller then navigates there). */
+    wearOutfit: (c: Collection, outfitId: string) => {
+      const o = c.outfits.find((x) => x.id === outfitId);
+      if (!o) return;
+      setCloset((st) => ({ ...st, wearing: { layers: { ...o.layers }, bottom: o.bottom, acc: { ...o.acc } }, lastCollection: c.id }));
     },
 
-    // Codespaces
-    openCodespace: (r: Repo) =>
-      act('code', `opened a codespace for ${HANDLE}/${r.name}`, (st) => ({
-        codespaces: [{ repoId: r.id, openedAt: Date.now() }, ...st.codespaces.filter((c) => c.repoId !== r.id)],
+    // Codespaces ("fitting room")
+    openCodespace: (c: Collection) =>
+      act('code', `opened a codespace for ${HANDLE}/${c.name}`, (st) => ({
+        codespaces: [{ repoId: c.id, openedAt: Date.now() }, ...st.codespaces.filter((x) => x.repoId !== c.id)],
         view: 'codespaces',
       })),
-    push: (r: Repo, message: string) =>
-      act('push', `pushed to ${HANDLE}/${r.name}: ${message.trim() || 'update'}`, (st) => ({
-        repos: touch(st.repos, r.id),
-        codespaces: st.codespaces.map((c) => (c.repoId === r.id ? { ...c, openedAt: Date.now() } : c)),
-      })),
+    push: (c: Collection, message: string) => {
+      setCloset((st) => ({
+        ...st,
+        collections: st.collections.map((x) => (x.id === c.id ? { ...x, updatedAt: Date.now() } : x)),
+      }));
+      act('push', `pushed to ${HANDLE}/${c.name}: ${message.trim() || 'update'}`, (st) => ({
+        codespaces: st.codespaces.map((x) => (x.repoId === c.id ? { ...x, openedAt: Date.now() } : x)),
+      }));
+    },
     stopCodespace: (repoId: string) => set((st) => ({ codespaces: st.codespaces.filter((c) => c.repoId !== repoId) })),
 
     // Pull requests
@@ -195,14 +203,15 @@ export function useDash() {
       if (!s.sound) blip();
       set((st) => ({ sound: !st.sound }));
     },
-    unstarAll: () => set(() => ({ starred: {} })),
+    unstarAll: () =>
+      setCloset((st) => ({ ...st, collections: st.collections.map((c) => ({ ...c, starred: false })) })),
     clearActivity: () => set(() => ({ activity: [] })),
     reset: () =>
-      confirm('Reset the dashboard? Repos, stars, reviews, issues, gists, organizations, calendar and activity are cleared.') &&
+      confirm('Reset the dashboard? Reviews, issues, gists, organizations, codespaces, calendar and activity are cleared. Your collections stay (manage them in the closet).') &&
       setS((st) => ({ ...INITIAL_DASH, avatar: st.avatar, spotlight: st.spotlight, sound: st.sound })),
   };
 
-  return { s, ...actions };
+  return { s, collections, closet, get, ...actions };
 }
 
 export type Dash = ReturnType<typeof useDash>;

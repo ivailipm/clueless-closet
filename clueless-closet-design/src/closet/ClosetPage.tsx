@@ -1,20 +1,25 @@
-import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../dashboard/icons';
 import { Panel } from '../dashboard/parts';
 import { ClothingArt } from '../shared/icons';
 import { fileToDataUrl } from '../shared/image';
 import { useInsideBackground } from '../shared/InsideBackground';
 import { OsWindow } from '../shared/OsWindow';
-import { usePersistentState } from '../shared/storage';
+import { HANDLE } from '../dashboard/data';
+import { logActivity } from '../dashboard/activityLog';
 import { CategoryRow } from './CategoryRow';
 import { ClothesDialog, type ClothesDraft } from './ClothesDialog';
+import { addOutfit, createCollection, mapOutfits } from './collections';
 import {
-  BOTTOMS, BUILT_IN, CLOSET_KEY, EXTRAS, INITIAL_CLOSET, LABELS, MAX_SAVED, ROWS, SHAPE,
-  layerIds, migrateCloset, rowOf,
+  BOTTOMS, BUILT_IN, EXTRAS, INITIAL_CLOSET, LABELS, ROWS, SHAPE, STYLE_COLOR,
+  layerIds, rowOf,
   type Category, type ClosetState, type Item, type Look, type RowKey,
 } from './data';
 import { Layers } from './Layers';
+import { OutfitThumb } from './OutfitThumb';
+import { SaveDialog, type SaveTarget } from './SaveDialog';
+import { useClosetState, useItems } from './store';
 
 const rand = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
@@ -30,31 +35,17 @@ function relocate(l: Look, id: string, place?: (l: Look) => Look): Look {
 const isEmpty = (l: Look) => !layerIds(l).length && !l.bottom && !Object.values(l.acc).some(Boolean);
 
 export function ClosetPage() {
-  const [s, setS] = usePersistentState<ClosetState>(
-    CLOSET_KEY,
-    INITIAL_CLOSET,
-    () => alert('Your closet is full: the browser could not store that photo. Try a smaller image.'),
-    migrateCloset,
-  );
+  const [s, setS] = useClosetState();
   const inside = useInsideBackground('closet');
   const fileInput = useRef<HTMLInputElement>(null);
   const [pendingCat, setPendingCat] = useState<Category>('tops');
   const [draft, setDraft] = useState<ClothesDraft | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [shelf, setShelf] = useState<string | null>(s.lastCollection);
 
-  const itemsOf = useMemo(() => {
-    const map = {} as Record<Category, Item[]>;
-    (Object.keys(BUILT_IN) as Category[]).forEach((c) => {
-      map[c] = BUILT_IN[c].concat(s.added.filter((a) => a.cat === c));
-    });
-    return map;
-  }, [s.added]);
-
-  const byId = useMemo(() => {
-    const m = new Map<string, Item>();
-    Object.values(itemsOf).forEach((list) => list.forEach((it) => m.set(it.id, it)));
-    return m;
-  }, [itemsOf]);
-  const get = (id: string | null | undefined) => (id ? byId.get(id) ?? null : null);
+  const { itemsOf, get } = useItems(s.added);
+  const navigate = useNavigate();
+  const current = s.collections.find((c) => c.id === shelf) ?? s.collections[0];
   const resolve = (ids: string[]) => ids.map(get).filter((x): x is Item => !!x);
 
   const layers = resolve(layerIds(s.wearing));
@@ -122,13 +113,11 @@ export function ClosetPage() {
       // New category: move it to the matching slot in the outfit and saved looks.
       const move = (l: Look) => relocate(l, it.id, (x) => putOn(x, it));
       const index = BUILT_IN[d.cat].length + added.filter((a) => a.cat === d.cat).findIndex((a) => a.id === it.id);
-      return {
-        ...st,
-        ...reveal(st, d.cat, index),
-        added,
-        wearing: move(st.wearing),
-        saved: st.saved.map((o) => ({ ...move(o), id: o.id })),
-      };
+      return mapOutfits(
+        { ...st, ...reveal(st, d.cat, index), added, wearing: move(st.wearing) },
+        (o) => ({ ...o, ...move(o) }),
+        isEmpty,
+      );
     });
     setDraft(null);
   };
@@ -137,12 +126,11 @@ export function ClosetPage() {
   const purge = (ids: Set<string>) =>
     setS((st) => {
       const clean = (l: Look) => [...ids].reduce((acc, id) => relocate(acc, id), l);
-      return {
-        ...st,
-        added: st.added.filter((a) => !ids.has(a.id)),
-        wearing: clean(st.wearing),
-        saved: st.saved.map((o) => ({ ...clean(o), id: o.id })).filter((o) => !isEmpty(o)),
-      };
+      return mapOutfits(
+        { ...st, added: st.added.filter((a) => !ids.has(a.id)), wearing: clean(st.wearing) },
+        (o) => ({ ...o, ...clean(o) }),
+        isEmpty,
+      );
     });
   const removeOwn = (it: { id: string; name: string }) => {
     if (!confirm(`Remove "${it.name}" from your closet?`)) return;
@@ -166,14 +154,28 @@ export function ClosetPage() {
       if (Math.random() < 0.4) layers.sweaters = rand(itemsOf.sweaters).id;
       return { ...st, wearing: { layers, bottom: rand(itemsOf[rand(BOTTOMS)]).id, acc } };
     });
-  const save = () =>
-    setS((st) => ({
-      ...st,
-      saved: [
-        { layers: { ...st.wearing.layers }, bottom: st.wearing.bottom, acc: { ...st.wearing.acc }, id: String(Date.now()) },
-        ...st.saved,
-      ].slice(0, MAX_SAVED),
-    }));
+  const save = () => {
+    if (isEmpty(s.wearing)) return alert('Put something on first, then save the outfit.');
+    setSaving(true);
+  };
+  /** Save the current outfit into an existing or brand-new collection. */
+  const saveTo = (target: SaveTarget, outfitName: string) => {
+    let st = s;
+    let colId: string;
+    if ('id' in target) colId = target.id;
+    else {
+      const made = createCollection(st, target.name, target.style);
+      if (!made) return;
+      st = made.state;
+      colId = made.col.id;
+      logActivity('create', `created ${HANDLE}/${made.col.name}`);
+    }
+    const col = st.collections.find((c) => c.id === colId)!;
+    setS(addOutfit(st, colId, st.wearing, outfitName));
+    logActivity('push', `saved "${outfitName.trim() || 'Untitled look'}" to ${HANDLE}/${col.name}`);
+    setShelf(colId);
+    setSaving(false);
+  };
   const clear = () => setS((st) => ({ ...st, wearing: { layers: {}, bottom: null, acc: {} } }));
 
   return (
@@ -214,17 +216,12 @@ export function ClosetPage() {
         {
           label: 'Closet',
           items: [
-            {
-              label: 'Delete saved looks',
-              disabled: s.saved.length === 0,
-              onSelect: () => confirm('Delete all saved looks?') && setS((st) => ({ ...st, saved: [] })),
-            },
             { label: 'Remove my uploads…', disabled: s.added.length === 0, onSelect: removeAllOwn },
             { separator: true },
             {
               label: 'Reset closet…',
               onSelect: () =>
-                confirm('Reset the closet? This removes your uploads and saved looks.') && setS(INITIAL_CLOSET),
+                confirm('Reset the closet? This removes your uploads and all collections.') && setS(INITIAL_CLOSET),
             },
           ],
         },
@@ -232,7 +229,7 @@ export function ClosetPage() {
       footer={
         <>
           <span className="fx-pill-small px">
-            <Icon name="heart" size={11} /> {total} items · wearing {wearingCount} · {s.saved.length} saved{' '}
+            <Icon name="heart" size={11} /> {total} items · wearing {wearingCount} · {s.collections.length} collections{' '}
             <Icon name="heart" size={11} />
           </span>
           <div className="fx-tools">
@@ -357,36 +354,61 @@ export function ClosetPage() {
             )}
           </Panel>
 
-          <Panel id="h-saved" title={`Saved looks (${s.saved.length})`} icon="star">
-            {s.saved.length ? (
-              <div className="cl-grid3">
-                {s.saved.map((o, i) => {
-                  const n = s.saved.length - i;
-                  const t = resolve(layerIds(o));
-                  const b = get(o.bottom);
-                  const count = EXTRAS.filter((c) => get(o.acc[c])).length;
-                  return (
+          <Panel
+            id="h-saved"
+            title="My collections"
+            icon="star"
+            footer={{ label: 'Manage in Code Closet', onClick: () => navigate('/dashboard') }}
+          >
+            {s.collections.length ? (
+              <>
+                <div role="group" aria-label="Collection" className="cl-shelf-tabs">
+                  {s.collections.map((c) => (
                     <button
-                      key={o.id}
+                      key={c.id}
                       type="button"
-                      className="cl-mini cl-look"
-                      aria-label={`Wear saved look ${n}`}
-                      onClick={() =>
-                        setS((st) => ({ ...st, wearing: { layers: { ...o.layers }, bottom: o.bottom, acc: { ...o.acc } } }))
-                      }
+                      className={`cl-tab px${current?.id === c.id ? ' on' : ''}`}
+                      aria-pressed={current?.id === c.id}
+                      onClick={() => setShelf(c.id)}
                     >
-                      <Layers items={t} w="100%" h={44} />
-                      {!t.length && <span style={{ display: 'block', height: 44 }} />}
-                      <span style={{ display: 'block', width: '100%', height: 46 }}>
-                        {b && <ClothingArt shape={b.shape} color={b.color} img={b.img} />}
-                      </span>
-                      <span className="fx-small fx-muted">{count ? `+${count} extra${count > 1 ? 's' : ''}` : `Look ${n}`}</span>
+                      {c.name}
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+                {current && (
+                  <p className="fx-muted fx-small fx-pad" style={{ margin: 0 }}>
+                    <span className="fx-chip" style={{ background: STYLE_COLOR[current.style] }}>
+                      {current.style}
+                    </span>{' '}
+                    {current.outfits.length} outfit{current.outfits.length === 1 ? '' : 's'} · tap one to wear it
+                  </p>
+                )}
+                {current?.outfits.length ? (
+                  <div className="cl-grid3">
+                    {current.outfits.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        className="cl-mini cl-look"
+                        aria-label={`Wear ${o.name}`}
+                        onClick={() =>
+                          setS((st) => ({ ...st, wearing: { layers: { ...o.layers }, bottom: o.bottom, acc: { ...o.acc } } }))
+                        }
+                      >
+                        <OutfitThumb look={o} get={get} size="sm" />
+                        <span className="cl-mini-name">{o.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="fx-empty">No outfits in this collection yet. Hit Save outfit and pick it.</p>
+                )}
+              </>
             ) : (
-              <p className="fx-empty">Hit Save outfit and your looks show up here. Tap one to wear it again.</p>
+              <p className="fx-empty">
+                Hit Save outfit to start your first collection, like <em>winter-outfits</em>. Collections show up as repos in
+                Code Closet.
+              </p>
             )}
           </Panel>
 
@@ -428,6 +450,15 @@ export function ClosetPage() {
         </aside>
       </div>
 
+      <SaveDialog
+        open={saving}
+        look={s.wearing}
+        collections={s.collections}
+        defaultId={s.lastCollection}
+        get={get}
+        onSave={saveTo}
+        onClose={() => setSaving(false)}
+      />
       <ClothesDialog draft={draft} onSave={saveDraft} onRemove={(id) => removeOwn({ id, name: get(id)?.name ?? 'this' })} onClose={() => setDraft(null)} />
     </OsWindow>
   );

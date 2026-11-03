@@ -173,6 +173,14 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 }
 .h3 { margin: 0; font-size: 14px; font-weight: 400; }
 
+/* Outfit thumbnail (closet collections, dashboard cards, lookbook) */
+.cl-thumb { display: flex; align-items: center; gap: 4px; width: 100%; max-width: 130px; margin: 0 auto; }
+.cl-thumb-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+.cl-thumb-sm { max-width: 80px; }
+.cl-thumb-extras { flex: none; display: flex; flex-direction: column; gap: 2px; }
+.cl-thumb-extra { display: block; width: 20px; height: 20px; }
+.cl-thumb-sm .cl-thumb-extra { width: 14px; height: 14px; }
+
 /* ---------- Closet (fashion look, shares the dashboard's fx-* pieces) ---------- */
 .layers { position: relative; flex: none; }
 .layer { position: absolute; }
@@ -232,6 +240,19 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 .cl-own-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--fx-text); overflow-wrap: anywhere; }
 
 .cl-dialog { width: min(560px, calc(100vw - 32px)); }
+.cl-save-preview { display: flex; align-items: center; justify-content: center; }
+.cl-save-list { margin: 6px 0 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; }
+.cl-save-list legend { padding: 0; margin-bottom: 4px; }
+.cl-save-opt {
+  display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 8px; cursor: pointer; font-size: 13px;
+  background: #FFFFFF; border: 2px solid #C7C2F5;
+}
+.cl-save-opt.on { border-color: var(--fx-pink); background: #FFF0F7; }
+.cl-save-opt:focus-within { outline: 3px solid #2F6FEB; outline-offset: 1px; }
+.cl-save-name { flex: 1; min-width: 0; font-weight: 600; color: var(--fx-text); overflow-wrap: anywhere; }
+.cl-save-new { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 2px 26px; }
+.cl-save-new .fx-field { flex: 1 1 140px; }
+.cl-shelf-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px 0; }
 .cl-dialog-body { display: grid; grid-template-columns: 180px 1fr; gap: 14px; align-items: start; }
 .cl-dialog-preview { width: 180px; height: 200px; padding: 8px; background: #FFFFFF; border: 2px solid var(--ink); }
 .cl-dialog-fields { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -406,7 +427,16 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
   border: 2px solid; border-color: #FFFFFF #7E7AC0 #7E7AC0 #FFFFFF; box-shadow: 0 0 0 1px var(--fx-navy);
 }
 .fx-more-pop { right: 0; left: auto; min-width: 190px; }
-.fx-repo-art { height: 104px; padding: 8px; background: #FBFAFF; }
+.fx-repo-art {
+  display: flex; align-items: center; justify-content: center; min-height: 140px; padding: 8px; width: 100%;
+  background: #FBFAFF; border: 0; cursor: pointer;
+}
+.fx-repo-art:hover { background: #F3EFFF; }
+.fx-repo-empty { font-size: 11px; color: #A9A4E0; }
+.fx-chip-select {
+  flex: none; max-width: 110px; min-height: 28px; font: inherit; font-size: 11px; font-weight: 700; color: #17164A;
+  cursor: pointer; border-radius: 0;
+}
 .fx-repo-body { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-top: 2px solid var(--fx-navy); }
 .fx-repo-tag { font-size: 13px; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
 .fx-repo-tag .fx-chip { flex: none; }
@@ -479,14 +509,31 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 .fx-act-text strong { color: var(--fx-text); }
 .fx-act-time { flex: none; }
 .fx-trend { padding: 4px 0; }
-.fx-trend li { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 13px; border-bottom: 1px solid #EEEAFB; }
-.fx-trend-art { flex: none; width: 26px; height: 26px; }
+.fx-trend li { border-bottom: 1px solid #EEEAFB; }
+.fx-trend-btn {
+  width: 100%; min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 13px;
+  text-align: left; background: transparent; border: 0;
+}
+.fx-trend-btn:hover { background: var(--fx-lilac); }
+.fx-trend-art { flex: none; width: 48px; display: flex; justify-content: center; }
+.fx-trend-art > .ico path { stroke: var(--fx-blue); }
 .fx-trend-name { flex: 1; min-width: 0; color: var(--fx-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fx-trend-stat { flex: none; display: inline-flex; align-items: center; gap: 3px; color: #6C69A0; }
 .fx-trend-stat .ico path { stroke: #6C69A0; }
 .fx-trend-stat .ico-fill path { fill: #F6C445; stroke: #8A6A10; }
 .fx-feat { padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; font-size: 14px; }
 .fx-feat strong { color: var(--fx-text); }
+
+/* Opened collection */
+.fx-outfits { list-style: none; margin: 0; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.fx-outfit {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; text-align: center; font-size: 13px;
+  background: #FFFFFF; border: 2px solid var(--fx-navy); box-shadow: 0 0 0 2px #C7C2F5;
+}
+.fx-outfit strong { color: var(--fx-text); }
+.fx-outfit-actions { display: flex; gap: 6px; margin-top: 4px; }
+.fx-lb-col + .fx-lb-col { margin-top: 12px; }
+.fx-lb-title { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 400; }
 
 /* Organizations */
 .fx-org-grid { list-style: none; margin: 0; padding: 10px 12px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }

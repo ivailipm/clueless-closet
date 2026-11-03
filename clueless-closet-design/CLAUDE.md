@@ -37,7 +37,15 @@ pink hearts, beige tabs, bottom toolbar). The pill reads "♥ MY CLOSET ♥ < PI
 - The built-in clothes are placeholder drawings; uploads get a pencil (rename / change category / remove) and ×
 - Click an item to wear it; extras toggle on/off, one per extras category
 - Top half layers: one tee, shirt and sweater at once (back to front), each toggled on/off
-- Side panels: Today's outfit (Shuffle, Save outfit, Clear), Extras, Saved looks you can re-wear, My uploads
+- Side panels: Today's outfit (Shuffle, Save outfit, Clear), Extras, My collections (wear a saved outfit), My uploads
+- Save outfit opens a window: name the outfit and pick a collection (e.g. winter-outfits) or start a new one with a style
+
+## Collections (shared by both screens)
+
+- A collection is a named group of saved outfits with a style (Casual, Cozy, Party, Work, Date night, Sporty,
+  Vacation, Chic), a star, a fork count and an "updated" time; stored in the closet state (`collections`)
+- On the dashboard each collection is a repo card: outfit preview, outfit count, style chip (a select), ★, forks,
+  "Updated …", ··· menu (open, open in codespace, fork, rename, delete); opening one lists its outfits with Wear / remove
 
 ## Dashboard screen
 
@@ -50,7 +58,7 @@ headers with pink hearts, pink OPEN buttons, bottom toolbar). Layout and behavio
   Pull requests (open count), Issues (open count), Codespaces, Stars, Gists, Organizations, link to the closet
 - Home: repositories carousel of 4; pull requests | contribution calendar | spotlight photo;
   activity feed | explore (own repos ranked by stars, forks, codespaces) | featured collection
-- Repo cards: star toggle with count, forks, language, "Updated …"; ··· menu: open in codespace, fork, delete
+- Repositories are the outfit collections (see Collections); + New repo creates an empty collection
 - Pull requests and issues toggle Open/Merged or Open/Closed and take comments; codespaces take pushes
 - Bottom toolbar: Save outfit, New repo, Import CD (backup import), Print lookbook, Preview (saved closet looks), sound
 - No invented stats: stars, forks, comments, updated times, calendar and activity start empty and fill in from use

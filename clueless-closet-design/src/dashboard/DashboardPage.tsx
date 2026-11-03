@@ -1,17 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BUILT_IN, CLOSET_KEY, EXTRAS, INITIAL_CLOSET, layerIds, migrateCloset, type ClosetState, type Item } from '../closet/data';
-import { Layers } from '../closet/Layers';
-import { ClothingArt, Hanger } from '../shared/icons';
+import { EXTRAS, layerIds, STYLE_COLOR } from '../closet/data';
+import { OutfitThumb } from '../closet/OutfitThumb';
+import { Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
 import { OsWindow } from '../shared/OsWindow';
-import { readStored } from '../shared/storage';
 import { useInsideBackground } from '../shared/InsideBackground';
 import { HANDLE, NAV, type View } from './data';
 import { Icon, type IconName } from './icons';
 import {
   ActivityPanel, CalendarPanel, CodespacesPanel, ExplorePanel, FeaturedPanel, GistsPanel, IssuesPanel,
-  OrgsPanel, PrsPanel, ReposPanel, SpotlightPanel, StarsPanel,
+  CollectionPanel, OrgsPanel, PrsPanel, ReposPanel, SpotlightPanel, StarsPanel,
 } from './panels';
 import { useDash } from './useDash';
 
@@ -20,26 +19,18 @@ const NAV_ICON: Record<View, IconName> = {
   stars: 'star', gists: 'gist', orgs: 'org', activity: 'heart',
 };
 
-/** Saved looks from the closet screen, resolved to items, for the lookbook. */
-function readLookbook() {
-  const closet = migrateCloset({ ...INITIAL_CLOSET, ...readStored<ClosetState>(CLOSET_KEY, INITIAL_CLOSET) });
-  const all = [...Object.values(BUILT_IN).flat(), ...(closet.added ?? [])];
-  const find = (id: string | null | undefined) => all.find((i) => i.id === id);
-  return closet.saved.map((o, i) => ({
-    id: o.id,
-    n: closet.saved.length - i,
-    layers: layerIds(o).map(find).filter((x): x is Item => !!x),
-    bottom: find(o.bottom) ?? null,
-    extras: EXTRAS.map((c) => find(o.acc[c])).filter((x): x is Item => !!x),
-  }));
-}
-
 export function DashboardPage() {
   const d = useDash();
   const { s } = d;
   const [newOpen, setNewOpen] = useState(false);
   const lookRef = useRef<HTMLDialogElement>(null);
-  const [looks, setLooks] = useState<ReturnType<typeof readLookbook>>([]);
+  /** Collection opened from a card (shown in the Repositories view). */
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openCollection = (id: string) => {
+    setOpenId(id);
+    d.setView('repos');
+  };
+  const lookbook = d.collections.filter((c) => c.outfits.length);
 
   // Photo background for the leopard area inside the window (leopard print until one is chosen).
   // Kept on the old storage key so photos chosen before this refactor stay.
@@ -56,7 +47,6 @@ export function DashboardPage() {
     if (v !== 'home' && v !== 'repos') d.setView('repos');
   };
   const openLookbook = () => {
-    setLooks(readLookbook());
     if (!lookRef.current?.open) lookRef.current?.showModal();
   };
   const print = () => {
@@ -93,7 +83,7 @@ export function DashboardPage() {
         {
           label: 'Edit',
           items: [
-            { label: 'Unstar all repos', disabled: !Object.values(s.starred).some(Boolean), onSelect: d.unstarAll },
+            { label: 'Unstar all repos', disabled: !d.collections.some((c) => c.starred), onSelect: d.unstarAll },
             { label: 'Clear activity feed', disabled: s.activity.length === 0, onSelect: d.clearActivity },
           ],
         },
@@ -251,7 +241,7 @@ export function DashboardPage() {
         <main className="fx-main">
           {v === 'home' && (
             <>
-              <ReposPanel d={d} full={false} newOpen={newOpen} onCloseNew={() => setNewOpen(false)} />
+              <ReposPanel d={d} full={false} newOpen={newOpen} onCloseNew={() => setNewOpen(false)} onOpen={openCollection} />
               <div className="fx-row-panels">
                 <PrsPanel d={d} full={false} />
                 <CalendarPanel d={d} />
@@ -259,16 +249,21 @@ export function DashboardPage() {
               </div>
               <div className="fx-row-panels">
                 <ActivityPanel d={d} full={false} />
-                <ExplorePanel d={d} />
+                <ExplorePanel d={d} onOpen={openCollection} />
                 <FeaturedPanel d={d} />
               </div>
             </>
           )}
-          {v === 'repos' && <ReposPanel d={d} full newOpen={newOpen} onCloseNew={() => setNewOpen(false)} />}
+          {v === 'repos' &&
+            (openId && d.collections.some((c) => c.id === openId) ? (
+              <CollectionPanel d={d} id={openId} onBack={() => setOpenId(null)} />
+            ) : (
+              <ReposPanel d={d} full newOpen={newOpen} onCloseNew={() => setNewOpen(false)} onOpen={openCollection} />
+            ))}
           {v === 'prs' && <PrsPanel d={d} full />}
           {v === 'issues' && <IssuesPanel d={d} />}
           {v === 'codespaces' && <CodespacesPanel d={d} />}
-          {v === 'stars' && <StarsPanel d={d} />}
+          {v === 'stars' && <StarsPanel d={d} onOpen={openCollection} />}
           {v === 'gists' && <GistsPanel d={d} />}
           {v === 'orgs' && <OrgsPanel d={d} />}
           {v === 'activity' && <ActivityPanel d={d} full />}
@@ -288,30 +283,38 @@ export function DashboardPage() {
           </button>
         </div>
         <div className="about-body">
-          {looks.length ? (
-            <ol className="fx-looks">
-              {looks.map((l) => (
-                <li key={l.id} className="fx-look">
-                  <span className="px fx-small">Look {l.n}</span>
-                  <Layers items={l.layers} w={110} h={90} />
-                  {l.bottom && (
-                    <div style={{ width: 110, height: 90 }}>
-                      <ClothingArt shape={l.bottom.shape} color={l.bottom.color} img={l.bottom.img} />
-                    </div>
-                  )}
-                  <span className="fx-small">
-                    {[...l.layers, ...(l.bottom ? [l.bottom] : []), ...l.extras].map((i) => i.name).join(', ')}
+          {lookbook.length ? (
+            lookbook.map((c) => (
+              <section key={c.id} className="fx-lb-col" aria-label={c.name}>
+                <h3 className="px fx-lb-title">
+                  {HANDLE}/{c.name}{' '}
+                  <span className="fx-chip" style={{ background: STYLE_COLOR[c.style] }}>
+                    {c.style}
                   </span>
-                </li>
-              ))}
-            </ol>
+                </h3>
+                <ol className="fx-looks">
+                  {c.outfits.map((o) => (
+                    <li key={o.id} className="fx-look">
+                      <span className="px fx-small">{o.name}</span>
+                      <OutfitThumb look={o} get={d.get} />
+                      <span className="fx-small">
+                        {[...layerIds(o), o.bottom, ...EXTRAS.map((x) => o.acc[x])]
+                          .map((id) => d.get(id)?.name)
+                          .filter(Boolean)
+                          .join(', ')}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ))
           ) : (
             <p>
-              No saved looks yet. Build an outfit in <Link to="/">My Closet</Link> and hit Save outfit.
+              No saved outfits yet. Build one in <Link to="/">My Closet</Link> and hit Save outfit.
             </p>
           )}
           <div className="fx-dialog-actions">
-            {looks.length > 0 && (
+            {lookbook.length > 0 && (
               <button type="button" className="btn" onClick={print}>
                 Print
               </button>

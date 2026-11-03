@@ -1,77 +1,95 @@
 import { useState } from 'react';
-import { ClothingArt, Tri } from '../shared/icons';
+import { useNavigate } from 'react-router-dom';
+import { STYLES, STYLE_COLOR, type Collection, type Style } from '../closet/data';
+import { OutfitThumb } from '../closet/OutfitThumb';
+import { Tri } from '../shared/icons';
 import { pickImage } from '../shared/image';
-import { ago, HANDLE, LEVELS, MONTHS, type ActivityKind, type Repo } from './data';
+import { ago, HANDLE, LEVELS, MONTHS, type ActivityKind } from './data';
 import { Icon, type IconName } from './icons';
 import { Comments, Empty, Panel, RepoCard, StateToggle } from './parts';
 import { PER_PAGE, type Dash } from './useDash';
 
 type P = { d: Dash };
 
-const cardProps = (d: Dash, r: Repo) => ({
-  repo: r,
-  starred: !!d.s.starred[r.id],
-  onStar: () => d.toggleStar(r),
-  onFork: () => d.forkRepo(r),
-  onCode: () => d.openCodespace(r),
-  onDelete: () => d.deleteRepo(r),
+type Open = { onOpen: (id: string) => void };
+
+const cardProps = (d: Dash, c: Collection, onOpen: (id: string) => void) => ({
+  col: c,
+  get: d.get,
+  onOpen: () => onOpen(c.id),
+  onStar: () => d.toggleStar(c),
+  onStyle: (st: Style) => d.setStyle(c, st),
+  onFork: () => d.forkRepo(c),
+  onCode: () => d.openCodespace(c),
+  onRename: () => {
+    const name = prompt(`New name for ${c.name}`, c.name);
+    if (name != null) d.renameRepo(c, name);
+  },
+  onDelete: () => d.deleteRepo(c),
 });
 
-/* ---------- Repositories ---------- */
+/* ---------- Repositories = outfit collections ---------- */
 
-export function ReposPanel({ d, full, newOpen, onCloseNew }: P & { full: boolean; newOpen: boolean; onCloseNew: () => void }) {
-  const { s } = d;
+export function ReposPanel({
+  d, full, newOpen, onCloseNew, onOpen,
+}: P & Open & { full: boolean; newOpen: boolean; onCloseNew: () => void }) {
+  const list = d.collections;
   const [name, setName] = useState('');
-  const n = s.repos.length;
-  const off = n ? ((s.off % n) + n) % n : 0;
-  const shown = full ? s.repos : Array.from({ length: Math.min(PER_PAGE, n) }, (_, i) => s.repos[(off + i) % n]);
+  const [style, setStyle] = useState<Style>('Casual');
+  const n = list.length;
+  const off = n ? ((d.s.off % n) + n) % n : 0;
+  const shown = full ? list : Array.from({ length: Math.min(PER_PAGE, n) }, (_, i) => list[(off + i) % n]);
   return (
     <Panel
       id="h-repos"
       title="My repositories"
-      sub="aka my outfits"
+      sub="aka my outfit collections"
       actions={
-        !full && (
+        !full &&
+        n > PER_PAGE && (
           <>
-            <button type="button" className="fx-mini" onClick={d.firstRepos} aria-label="First repositories">
+            <button type="button" className="fx-mini" onClick={d.firstRepos} aria-label="First collections">
               <Tri dir="left" double width={18} height={11} />
             </button>
-            <button type="button" className="fx-mini" onClick={() => d.shiftRepos(-1)} aria-label="Previous repository">
+            <button type="button" className="fx-mini" onClick={() => d.shiftRepos(-1)} aria-label="Previous collection">
               <Tri dir="left" width={11} height={11} />
             </button>
-            <button type="button" className="fx-mini" onClick={() => d.shiftRepos(1)} aria-label="Next repository">
+            <button type="button" className="fx-mini" onClick={() => d.shiftRepos(1)} aria-label="Next collection">
               <Tri dir="right" width={11} height={11} />
             </button>
-            <button type="button" className="fx-mini" onClick={d.lastRepos} aria-label="Last repositories">
+            <button type="button" className="fx-mini" onClick={d.lastRepos} aria-label="Last collections">
               <Tri dir="right" double width={18} height={11} />
             </button>
           </>
         )
       }
-      footer={full ? undefined : { label: `View all ${n} repositories`, onClick: () => d.setView('repos') }}
+      footer={full || !n ? undefined : { label: `View all ${n} collection${n === 1 ? '' : 's'}`, onClick: () => d.setView('repos') }}
     >
       {n ? (
         <div className={`fx-repo-grid${full ? '' : ' fx-repo-grid-fit'}`}>
-          {shown.map((r) => (
-            <RepoCard key={r.id} {...cardProps(d, r)} />
+          {shown.map((c) => (
+            <RepoCard key={c.id} {...cardProps(d, c, onOpen)} />
           ))}
         </div>
       ) : (
-        <Empty>No repos yet. Hit + New repo to start one.</Empty>
+        <Empty>
+          No collections yet. In My Closet, build an outfit and hit Save outfit to start one (like winter-outfits), or use + New
+          repo.
+        </Empty>
       )}
       {newOpen && (
         <form
           className="fx-inline-form fx-pad"
           onSubmit={(e) => {
             e.preventDefault();
-            if (d.createRepo(name)) {
+            if (d.createRepo(name, style)) {
               setName('');
               onCloseNew();
             }
           }}
         >
           <label htmlFor="newrepo" className="fx-label">
-            New repo name
+            New collection
           </label>
           <input
             id="newrepo"
@@ -79,8 +97,16 @@ export function ReposPanel({ d, full, newOpen, onCloseNew }: P & { full: boolean
             value={name}
             autoFocus
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. velvet-router"
+            placeholder="e.g. winter-outfits"
           />
+          <label htmlFor="newrepo-style" className="sr">
+            Style
+          </label>
+          <select id="newrepo-style" className="fx-field" style={{ flex: '0 1 140px' }} value={style} onChange={(e) => setStyle(e.target.value as Style)}>
+            {STYLES.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
           <button type="submit" className="fx-btn fx-btn-pink px">
             Create
           </button>
@@ -93,18 +119,84 @@ export function ReposPanel({ d, full, newOpen, onCloseNew }: P & { full: boolean
   );
 }
 
-export function StarsPanel({ d }: P) {
-  const starred = d.s.repos.filter((r) => d.s.starred[r.id]);
+/** One collection opened: its outfits, to wear in the closet or remove. */
+export function CollectionPanel({ d, id, onBack }: P & { id: string; onBack: () => void }) {
+  const navigate = useNavigate();
+  const c = d.collections.find((x) => x.id === id);
+  if (!c) return null;
+  const card = cardProps(d, c, () => {});
   return (
-    <Panel id="h-stars" title="Stars" sub="my faves" icon="star">
+    <Panel
+      id="h-col"
+      title={`${HANDLE}/${c.name}`}
+      sub={`${c.style} · ${c.outfits.length} outfit${c.outfits.length === 1 ? '' : 's'}`}
+      icon="repo"
+      actions={
+        <>
+          <button type="button" className={`fx-btn px${c.starred ? ' on' : ''}`} aria-pressed={c.starred} onClick={card.onStar}>
+            <Icon name="star" size={13} /> {c.starred ? 'Starred' : 'Star'}
+          </button>
+          <button type="button" className="fx-btn px" onClick={card.onFork}>
+            <Icon name="fork" size={13} /> Fork
+          </button>
+          <button type="button" className="fx-btn px" onClick={card.onRename}>
+            Rename
+          </button>
+        </>
+      }
+      footer={{ label: 'Back to all collections', onClick: onBack }}
+    >
+      <p className="fx-muted fx-small fx-pad" style={{ margin: 0 }}>
+        <span className="fx-chip" style={{ background: STYLE_COLOR[c.style] }}>
+          {c.style}
+        </span>{' '}
+        {c.forkOf ? `Forked from ${c.forkOf} · ` : ''}
+        {c.updatedAt ? `Updated ${ago(c.updatedAt)}` : 'No updates yet'}
+      </p>
+      {c.outfits.length ? (
+        <ul className="fx-outfits">
+          {c.outfits.map((o) => (
+            <li key={o.id} className="fx-outfit">
+              <OutfitThumb look={o} get={d.get} />
+              <strong>{o.name}</strong>
+              <span className="fx-muted fx-small">saved {ago(o.savedAt)}</span>
+              <div className="fx-outfit-actions">
+                <button
+                  type="button"
+                  className="fx-btn fx-btn-pink px"
+                  onClick={() => {
+                    d.wearOutfit(c, o.id);
+                    navigate('/');
+                  }}
+                >
+                  Wear
+                </button>
+                <button type="button" className="fx-btn px" aria-label={`Remove ${o.name}`} onClick={() => d.removeOutfit(c, o.id, o.name)}>
+                  <Icon name="trash" size={13} />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty>No outfits here yet. In My Closet, hit Save outfit and pick {c.name}.</Empty>
+      )}
+    </Panel>
+  );
+}
+
+export function StarsPanel({ d, onOpen }: P & Open) {
+  const starred = d.collections.filter((c) => c.starred);
+  return (
+    <Panel id="h-stars" title="Stars" sub="my fave collections" icon="star">
       {starred.length ? (
         <div className="fx-repo-grid">
-          {starred.map((r) => (
-            <RepoCard key={r.id} {...cardProps(d, r)} />
+          {starred.map((c) => (
+            <RepoCard key={c.id} {...cardProps(d, c, onOpen)} />
           ))}
         </div>
       ) : (
-        <Empty>Nothing starred yet. Tap the ★ on a repo card to add it here.</Empty>
+        <Empty>Nothing starred yet. Tap the ★ on a collection card to add it here.</Empty>
       )}
     </Panel>
   );
@@ -360,11 +452,10 @@ export function ActivityPanel({ d, full }: P & { full: boolean }) {
 
 /* ---------- Explore ---------- */
 
-export function ExplorePanel({ d }: P) {
-  const { s } = d;
-  const coding = new Set(s.codespaces.map((c) => c.repoId));
-  const score = (r: Repo) => (s.starred[r.id] ? 3 : 0) + r.forks * 2 + (coding.has(r.id) ? 1 : 0);
-  const top = [...s.repos]
+export function ExplorePanel({ d, onOpen }: P & Open) {
+  const coding = new Set(d.s.codespaces.map((c) => c.repoId));
+  const score = (c: Collection) => (c.starred ? 3 : 0) + c.forks * 2 + c.outfits.length + (coding.has(c.id) ? 1 : 0);
+  const top = [...d.collections]
     .sort((a, b) => score(b) - score(a) || (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
     .slice(0, 4);
   return (
@@ -377,26 +468,29 @@ export function ExplorePanel({ d }: P) {
     >
       {top.length ? (
         <ol className="fx-list fx-trend">
-          {top.map((r) => (
-            <li key={r.id}>
-              <span className="fx-trend-art" aria-hidden="true">
-                <ClothingArt shape={r.shape} color={r.color} />
-              </span>
-              <span className="fx-trend-name">
-                {HANDLE}/{r.name}
-              </span>
-              <span className="fx-small fx-trend-stat" aria-label={`${s.starred[r.id] ? 1 : 0} stars, ${r.forks} forks`}>
-                <Icon name="star" size={12} /> {s.starred[r.id] ? 1 : 0}
-                <Icon name="fork" size={12} /> {r.forks}
-              </span>
+          {top.map((c) => (
+            <li key={c.id}>
+              <button type="button" className="fx-trend-btn" onClick={() => onOpen(c.id)}>
+                <span className="fx-trend-name">
+                  {HANDLE}/{c.name}
+                </span>
+                <span
+                  className="fx-small fx-trend-stat"
+                  aria-label={`${c.outfits.length} outfits, ${c.starred ? 1 : 0} stars, ${c.forks} forks`}
+                >
+                  <Icon name="hanger" size={12} /> {c.outfits.length}
+                  <Icon name="star" size={12} /> {c.starred ? 1 : 0}
+                  <Icon name="fork" size={12} /> {c.forks}
+                </span>
+              </button>
             </li>
           ))}
         </ol>
       ) : (
-        <Empty>No repos to rank yet.</Empty>
+        <Empty>No collections to rank yet.</Empty>
       )}
       <p className="fx-muted fx-small fx-pad" style={{ margin: 0 }}>
-        Star, fork or open a codespace to climb the chart.
+        Save outfits, star or fork to climb the chart.
       </p>
     </Panel>
   );
@@ -429,8 +523,8 @@ export function CodespacesPanel({ d }: P) {
   const { s } = d;
   const [msg, setMsg] = useState<Record<string, string>>({});
   const open = s.codespaces
-    .map((c) => ({ c, r: s.repos.find((r) => r.id === c.repoId) }))
-    .filter((x): x is { c: (typeof s.codespaces)[number]; r: Repo } => !!x.r);
+    .map((c) => ({ c, r: d.collections.find((r) => r.id === c.repoId) }))
+    .filter((x): x is { c: (typeof s.codespaces)[number]; r: Collection } => !!x.r);
   return (
     <Panel id="h-code" title="Codespaces" sub="fitting rooms" icon="codespace">
       {open.length ? (
@@ -439,7 +533,7 @@ export function CodespacesPanel({ d }: P) {
             <li key={r.id} className="fx-row">
               <div className="fx-row-main">
                 <span className="fx-trend-art" aria-hidden="true">
-                  <ClothingArt shape={r.shape} color={r.color} />
+                  {r.outfits[0] ? <OutfitThumb look={r.outfits[0]} get={d.get} size="sm" /> : <Icon name="hanger" size={20} />}
                 </span>
                 <div className="fx-row-text">
                   <strong>
@@ -477,7 +571,7 @@ export function CodespacesPanel({ d }: P) {
           ))}
         </ul>
       ) : (
-        <Empty>No codespaces open. Use ··· › Open in codespace on a repo card to try it on.</Empty>
+        <Empty>No codespaces open. Use ··· › Open in codespace on a collection card.</Empty>
       )}
     </Panel>
   );

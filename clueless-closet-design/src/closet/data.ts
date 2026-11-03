@@ -66,12 +66,40 @@ type Slots = Partial<Record<Category, string | null>>;
  */
 export type Look = { layers: Slots; bottom: string | null; acc: Slots };
 
+/** The "language" chip on a collection card. */
+export const STYLES = ['Casual', 'Cozy', 'Party', 'Work', 'Date night', 'Sporty', 'Vacation', 'Chic'] as const;
+export type Style = (typeof STYLES)[number];
+export const STYLE_COLOR: Record<Style, string> = {
+  Casual: '#9DB8D9', Cozy: '#E8C9A0', Party: '#F29BC3', Work: '#B9B4E8',
+  'Date night': '#E57373', Sporty: '#A8E0C8', Vacation: '#F7DC6F', Chic: '#D9D4CC',
+};
+
+/** A saved outfit inside a collection. */
+export type Outfit = Look & { id: string; name: string; savedAt: number };
+
+/** A collection of outfits, shown on the dashboard as a repo (e.g. ivailipm/winter-outfits). */
+export type Collection = {
+  id: string;
+  name: string;
+  style: Style;
+  outfits: Outfit[];
+  starred: boolean;
+  /** Times it was forked. */
+  forks: number;
+  forkOf?: string;
+  createdAt: number;
+  /** Last time an outfit was saved, changed or removed; null until then. */
+  updatedAt: number | null;
+};
+
 export type ClosetState = {
   tab: Record<RowKey, Category>;
   off: Partial<Record<Category, number>>;
   wearing: Look;
   added: Item[];
-  saved: (Look & { id: string })[];
+  collections: Collection[];
+  /** Collection Save outfit picks by default. */
+  lastCollection: string | null;
 };
 
 export const INITIAL_CLOSET: ClosetState = {
@@ -79,16 +107,22 @@ export const INITIAL_CLOSET: ClosetState = {
   off: {},
   wearing: { layers: { tops: 'tops1' }, bottom: 'skirts0', acc: { bags: 'bags1' } },
   added: [],
-  saved: [],
+  collections: [],
+  lastCollection: null,
 };
 
 export const CLOSET_KEY = 'closet';
-export const MAX_SAVED = 6;
 
-/** Older saves kept a single `top` id; move it into its category's layer slot. */
-export function migrateCloset(st: ClosetState): ClosetState {
+type OldLook = Look & { top?: string | null; id?: string };
+
+/**
+ * Upgrade older saves:
+ * - a single `top` id moves into its category's layer slot;
+ * - the old flat `saved` list becomes a starter collection called "my-looks".
+ */
+export function migrateCloset(raw: ClosetState & { saved?: OldLook[] }): ClosetState {
   const catOf = (id: string): Category | undefined =>
-    st.added?.find((a) => a.id === id)?.cat ??
+    raw.added?.find((a) => a.id === id)?.cat ??
     (Object.keys(BUILT_IN) as Category[]).find((c) => BUILT_IN[c].some((i) => i.id === id));
   const fix = <L extends Look>(l: L & { top?: string | null }): L => {
     if (l.layers) return l;
@@ -96,7 +130,30 @@ export function migrateCloset(st: ClosetState): ClosetState {
     const cat = top ? catOf(top) : undefined;
     return { ...rest, layers: cat ? { [cat]: top } : {} } as unknown as L;
   };
-  return { ...st, wearing: fix(st.wearing), saved: (st.saved ?? []).map(fix) };
+  const { saved, ...st } = raw;
+  let collections = st.collections ?? [];
+  if (saved?.length && !collections.length) {
+    const now = Date.now();
+    collections = [
+      {
+        id: 'my-looks',
+        name: 'my-looks',
+        style: 'Casual',
+        starred: false,
+        forks: 0,
+        createdAt: now,
+        updatedAt: now,
+        outfits: saved.map((o, i) => {
+          const l = fix(o);
+          return {
+            layers: l.layers, bottom: l.bottom, acc: l.acc,
+            id: o.id ?? String(now + i), name: `Look ${saved.length - i}`, savedAt: Number(o.id) || now,
+          };
+        }),
+      },
+    ];
+  }
+  return { ...st, wearing: fix(st.wearing), collections, lastCollection: st.lastCollection ?? collections[0]?.id ?? null };
 }
 
 /** Worn top-half items, back to front. */
