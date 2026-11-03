@@ -23,7 +23,9 @@ paths, sample data and behaviour from them, and rebuild everything as normal Rea
 - Window frame with gradient title bar, decorative _ □ x buttons, File/Edit/View menu bar, sunken content area,
   status bar, and a taskbar with a live clock and links between the two screens
 - Raised bevel buttons: light top-left border, dark bottom-right border, swapped when pressed or active
-- Wallpaper: plaid (default), dots, plain, or a photo the user uploads
+- Wallpaper: plaid (default), dots, plain, red lace, leopard, or a photo the user uploads
+- Inside the window: leopard print (default), red lace, or a photo. Lace is `src/shared/lace.svg`, drawn by
+  `scripts/make-lace.py`
 
 ## Closet screen
 

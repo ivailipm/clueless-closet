@@ -25,6 +25,8 @@ const PATTERNS: [WallpaperName, string][] = [
   ['plaid', 'Plaid wallpaper'],
   ['dots', 'Dots wallpaper'],
   ['plain', 'Plain wallpaper'],
+  ['lace', 'Red lace wallpaper'],
+  ['leopard', 'Leopard wallpaper'],
 ];
 
 /** Things a screen can trigger from its own buttons. */

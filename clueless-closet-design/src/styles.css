@@ -330,7 +330,7 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 
 .fx-content {
   position: relative; display: flex; flex-wrap: wrap; gap: 0;
-  background: url('./dashboard/leopard.svg') 0 0 / 150px 150px, #D3A065;
+  background: url('./shared/leopard.svg') 0 0 / 150px 150px, #D3A065;
   border: 3px solid var(--fx-navy); box-shadow: inset 0 0 0 2px #6A6EF5;
 }
 .fx-side, .fx-main { position: relative; z-index: 1; }

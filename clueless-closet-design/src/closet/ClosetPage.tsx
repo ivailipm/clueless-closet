@@ -273,11 +273,13 @@ export function ClosetPage() {
             <button type="button" className="fx-tool px" onClick={inside.openUpload} title="Photo for the leopard area">
               <Icon name="sparkle" size={15} /> Background
             </button>
-            {inside.showingPhoto && (
-              <button type="button" className="fx-tool px" onClick={inside.hidePhoto}>
-                Back to leopard
-              </button>
-            )}
+            <button
+              type="button"
+              className="fx-tool px"
+              onClick={() => inside.setPattern(inside.pattern === 'lace' && !inside.showingPhoto ? 'leopard' : 'lace')}
+            >
+              {inside.pattern === 'lace' && !inside.showingPhoto ? 'Leopard print' : 'Red lace'}
+            </button>
             <Link to="/dashboard" className="fx-tool px">
               <Icon name="repo" size={15} /> Code Closet
             </Link>

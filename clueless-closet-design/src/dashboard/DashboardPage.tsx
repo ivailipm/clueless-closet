@@ -213,18 +213,21 @@ export function DashboardPage() {
               <Icon name="camera" size={16} />
               <span className="fx-nav-label">Inside photo</span>
             </button>
-            {inside.showingPhoto ? (
-              <button type="button" className="fx-nav px" onClick={() => inside.hidePhoto()}>
-                <Icon name="sparkle" size={16} />
-                <span className="fx-nav-label">Back to leopard</span>
+            <button
+              type="button"
+              className="fx-nav px"
+              onClick={() => inside.setPattern(inside.pattern === 'lace' && !inside.showingPhoto ? 'leopard' : 'lace')}
+            >
+              <Icon name="sparkle" size={16} />
+              <span className="fx-nav-label">
+                {inside.pattern === 'lace' && !inside.showingPhoto ? 'Leopard print' : 'Red lace'}
+              </span>
+            </button>
+            {inside.hasPhoto && !inside.showingPhoto && (
+              <button type="button" className="fx-nav px" onClick={inside.showPhoto}>
+                <Icon name="eye" size={16} />
+                <span className="fx-nav-label">Show my photo</span>
               </button>
-            ) : (
-              inside.hasPhoto && (
-                <button type="button" className="fx-nav px" onClick={inside.showPhoto}>
-                  <Icon name="eye" size={16} />
-                  <span className="fx-nav-label">Show my photo</span>
-                </button>
-              )
             )}
             <button
               type="button"

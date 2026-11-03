@@ -2,13 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import type { MenuItem } from './MenuBar';
 import { useWallpaper, WallpaperLayer, type Slot } from './wallpaper';
 
+/** Patterns offered for the area inside the window (leopard is the CSS default under everything). */
+export type InsidePattern = 'leopard' | 'lace';
+
 /**
- * Photo background for the leopard area inside a fashion window.
- * Leopard print shows until a photo is chosen; horizontal photos are used on computers,
- * vertical ones on phones. `node` goes first inside the positioned `.fx-content`.
+ * Background for the leopard area inside a fashion window: leopard print, red lace, or your photo
+ * (horizontal photos are used on computers, vertical ones on phones). `node` goes first inside `.fx-content`.
  */
 export function useInsideBackground(screen: string) {
-  const bg = useWallpaper(`${screen}-inside`, false);
+  const bg = useWallpaper(`${screen}-inside`, false, 'leopard');
+  // Slots saved before lace existed hold 'plaid'; they always showed leopard.
+  const pattern: InsidePattern = bg.wall.pattern === 'lace' ? 'lace' : 'leopard';
   const inputs = {
     auto: useRef<HTMLInputElement>(null),
     landscape: useRef<HTMLInputElement>(null),
@@ -39,7 +43,8 @@ export function useInsideBackground(screen: string) {
   const openUpload = () => inputs.auto.current?.click();
 
   const menuItems: MenuItem[] = [
-    { label: 'Inside: leopard print', checked: !bg.showingPhoto, onSelect: bg.hidePhoto },
+    { label: 'Inside: leopard print', checked: !bg.showingPhoto && pattern === 'leopard', onSelect: () => bg.setPattern('leopard') },
+    { label: 'Inside: red lace', checked: !bg.showingPhoto && pattern === 'lace', onSelect: () => bg.setPattern('lace') },
     { label: 'Inside: my photo', checked: bg.showingPhoto, disabled: !bg.hasPhoto, onSelect: bg.showPhoto },
     { label: 'Change inside background…', onSelect: openUpload },
     { label: 'Inside: upload computer photo (horizontal)…', onSelect: () => inputs.landscape.current?.click() },
@@ -49,7 +54,7 @@ export function useInsideBackground(screen: string) {
 
   const node = (
     <>
-      {bg.showingPhoto && <WallpaperLayer wall={bg.wall} photo contained />}
+      {(bg.showingPhoto || pattern === 'lace') && <WallpaperLayer wall={bg.wall} photo={bg.showingPhoto} contained />}
       {(['auto', 'landscape', 'portrait'] as const).map((k) => (
         <input
           key={k}
@@ -75,8 +80,10 @@ export function useInsideBackground(screen: string) {
     menuItems,
     openUpload,
     showingPhoto: bg.showingPhoto,
+    pattern,
+    /** Show a pattern (and stop showing the photo, which is kept). */
+    setPattern: (p: InsidePattern) => bg.setPattern(p),
     hasPhoto: bg.hasPhoto,
-    hidePhoto: bg.hidePhoto,
     showPhoto: bg.showPhoto,
   };
 }

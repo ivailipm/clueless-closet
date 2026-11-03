@@ -25,9 +25,12 @@ function legacy(): Wallpaper {
   return { ...EMPTY, pattern: old.pattern ?? 'plaid', landscape: old.image ?? null, showPhoto: !!old.image };
 }
 
-/** `screen` names the storage slot; only the screens' own wallpapers inherit the old shared one. */
-export function useWallpaper(screen: string, inheritLegacy = true) {
-  const [wall, setWall] = usePersistentState<Wallpaper>(`wallpaper-${screen}`, inheritLegacy ? legacy : EMPTY, () =>
+/**
+ * `screen` names the storage slot; only the screens' own wallpapers inherit the old shared one.
+ * `pattern` is the starting pattern for a fresh slot.
+ */
+export function useWallpaper(screen: string, inheritLegacy = true, pattern: WallpaperName = 'plaid') {
+  const [wall, setWall] = usePersistentState<Wallpaper>(`wallpaper-${screen}`, inheritLegacy ? legacy : { ...EMPTY, pattern }, () =>
     alert('That photo is too big to remember. Try a smaller one, or remove the other wallpaper photo first.'),
   );
 
@@ -53,7 +56,7 @@ export function useWallpaper(screen: string, inheritLegacy = true) {
     upload,
     setPattern: (pattern: WallpaperName) => setWall((w) => ({ ...w, pattern, showPhoto: false })),
     showPhoto: () => setWall((w) => ({ ...w, showPhoto: true })),
-    /** Keep the photos but show the pattern (or, inside the dashboard, the leopard print). */
+    /** Keep the photos but show the pattern instead. */
     hidePhoto: () => setWall((w) => ({ ...w, showPhoto: false })),
     remove: (slot: Slot) =>
       setWall((w) => {
