@@ -11,9 +11,9 @@ import { logActivity } from '../dashboard/activityLog';
 import { CategoryRow } from './CategoryRow';
 import { ClothesDialog, type ClothesDraft } from './ClothesDialog';
 import { addOutfit, createCollection, mapOutfits } from './collections';
+import { CategoryDialog, type CategoryDraft } from './CategoryDialog';
 import {
-  BOTTOMS, BUILT_IN, EXTRAS, INITIAL_CLOSET, LABELS, ROWS, SHAPE, STYLE_COLOR,
-  layerIds, rowOf,
+  INITIAL_CLOSET, STYLE_COLOR, builtIn, catalog, extraIds, layerIds,
   type Category, type ClosetState, type Item, type Look, type RowKey,
 } from './data';
 import { Layers } from './Layers';
@@ -41,16 +41,20 @@ export function ClosetPage() {
   const [pendingCat, setPendingCat] = useState<Category>('tops');
   const [draft, setDraft] = useState<ClothesDraft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [catDraft, setCatDraft] = useState<CategoryDraft | null>(null);
   const [shelf, setShelf] = useState<string | null>(s.lastCollection);
 
   const { itemsOf, get } = useItems(s.added);
+  /** Built-in categories plus the ones you added. */
+  const cats = catalog(s.customCats);
+  const itemsIn = (c: Category) => itemsOf[c] ?? [];
   const navigate = useNavigate();
   const current = s.collections.find((c) => c.id === shelf) ?? s.collections[0];
   const resolve = (ids: string[]) => ids.map(get).filter((x): x is Item => !!x);
 
   const layers = resolve(layerIds(s.wearing));
   const bottom = get(s.wearing.bottom);
-  const extras = EXTRAS.map((c) => get(s.wearing.acc[c])).filter((x): x is Item => !!x);
+  const extras = extraIds(s.wearing).map(get).filter((x): x is Item => !!x);
   const total = Object.values(itemsOf).reduce((n, l) => n + l.length, 0);
   const wearingCount = layers.length + (bottom ? 1 : 0) + extras.length;
 
@@ -59,7 +63,7 @@ export function ClosetPage() {
 
   /** Put `it` on (replacing whatever was in its slot). */
   const putOn = (l: Look, it: Item): Look => {
-    const key = rowOf(it.cat);
+    const key = cats.rowOf(it.cat);
     if (key === 'bottom') return { ...l, bottom: it.id };
     return { ...l, [slotOf(key)]: { ...l[slotOf(key)], [it.cat]: it.id } };
   };
@@ -77,7 +81,7 @@ export function ClosetPage() {
 
   /** Show `cat` in its row, scrolled so `index` is visible. */
   const reveal = (st: ClosetState, cat: Category, index: number): Partial<ClosetState> => ({
-    tab: { ...st.tab, [rowOf(cat)]: cat },
+    tab: { ...st.tab, [cats.rowOf(cat)]: cat },
     off: { ...st.off, [cat]: Math.max(0, index - 2) },
   });
 
@@ -101,18 +105,18 @@ export function ClosetPage() {
   const saveDraft = (d: ClothesDraft) => {
     setS((st) => {
       if (!d.id) {
-        const it: Item = { id: 'u' + Date.now(), cat: d.cat, name: d.name, img: d.img, color: '#FFFFFF', shape: SHAPE[d.cat] };
-        const index = BUILT_IN[d.cat].length + st.added.filter((a) => a.cat === d.cat).length;
+        const it: Item = { id: 'u' + Date.now(), cat: d.cat, name: d.name, img: d.img, color: '#FFFFFF', shape: cats.shape(d.cat) };
+        const index = builtIn(d.cat).length + st.added.filter((a) => a.cat === d.cat).length;
         return { ...st, ...reveal(st, d.cat, index), added: [...st.added, it], wearing: putOn(st.wearing, it) };
       }
       const old = st.added.find((a) => a.id === d.id);
       if (!old) return st;
-      const it: Item = { ...old, name: d.name, img: d.img, cat: d.cat, shape: SHAPE[d.cat] };
+      const it: Item = { ...old, name: d.name, img: d.img, cat: d.cat, shape: cats.shape(d.cat) };
       const added = st.added.map((a) => (a.id === it.id ? it : a));
       if (old.cat === d.cat) return { ...st, added };
       // New category: move it to the matching slot in the outfit and saved looks.
       const move = (l: Look) => relocate(l, it.id, (x) => putOn(x, it));
-      const index = BUILT_IN[d.cat].length + added.filter((a) => a.cat === d.cat).findIndex((a) => a.id === it.id);
+      const index = builtIn(d.cat).length + added.filter((a) => a.cat === d.cat).findIndex((a) => a.id === it.id);
       return mapOutfits(
         { ...st, ...reveal(st, d.cat, index), added, wearing: move(st.wearing) },
         (o) => ({ ...o, ...move(o) }),
@@ -123,15 +127,40 @@ export function ClosetPage() {
   };
 
   /** Remove uploaded items and anything that still points at them. */
-  const purge = (ids: Set<string>) =>
+  const purgeState = (st: ClosetState, ids: Set<string>) => {
+    const clean = (l: Look) => [...ids].reduce((acc, id) => relocate(acc, id), l);
+    return mapOutfits(
+      { ...st, added: st.added.filter((a) => !ids.has(a.id)), wearing: clean(st.wearing) },
+      (o) => ({ ...o, ...clean(o) }),
+      isEmpty,
+    );
+  };
+  const purge = (ids: Set<string>) => setS((st) => purgeState(st, ids));
+
+  // ---- Your own categories ----
+  const saveCategory = (d: CategoryDraft) => {
     setS((st) => {
-      const clean = (l: Look) => [...ids].reduce((acc, id) => relocate(acc, id), l);
-      return mapOutfits(
-        { ...st, added: st.added.filter((a) => !ids.has(a.id)), wearing: clean(st.wearing) },
-        (o) => ({ ...o, ...clean(o) }),
-        isEmpty,
-      );
+      if (d.id) return { ...st, customCats: st.customCats.map((c) => (c.id === d.id ? { ...c, name: d.name } : c)) };
+      const id = 'c-' + Date.now().toString(36);
+      return { ...st, customCats: [...st.customCats, { id, name: d.name, row: d.row }], tab: { ...st.tab, [d.row]: id } };
     });
+    setCatDraft(null);
+  };
+  const deleteCategory = (id: string) => {
+    const c = s.customCats.find((x) => x.id === id);
+    const pieces = s.added.filter((a) => a.cat === id);
+    if (!c || !confirm(`Delete "${c.name}"${pieces.length ? ` and the ${pieces.length} piece${pieces.length > 1 ? 's' : ''} in it` : ''}?`)) return;
+    setS((st) => {
+      const next = purgeState(st, new Set(pieces.map((p) => p.id)));
+      const firstCat = cats.rows.find((r) => r.key === c.row)!.cats[0];
+      return {
+        ...next,
+        customCats: next.customCats.filter((x) => x.id !== id),
+        tab: next.tab[c.row] === id ? { ...next.tab, [c.row]: firstCat } : next.tab,
+      };
+    });
+    setCatDraft(null);
+  };
   const removeOwn = (it: { id: string; name: string }) => {
     if (!confirm(`Remove "${it.name}" from your closet?`)) return;
     purge(new Set([it.id]));
@@ -144,15 +173,20 @@ export function ClosetPage() {
   // ---- Outfit actions ----
   const shuffle = () =>
     setS((st) => {
+      const pick = (c: Category) => (itemsIn(c).length ? rand(itemsIn(c)).id : null);
+      const filled = (list: Category[]) => list.filter((c) => itemsIn(c).length);
+      const [topRow, bottomRow, accRow] = cats.rows;
       const acc: Look['acc'] = {};
-      EXTRAS.forEach((c) => (acc[c] = Math.random() < 0.35 ? rand(itemsOf[c]).id : null));
-      // A tee or shirt as the base, sometimes both, sometimes a sweater on top.
+      accRow.cats.forEach((c) => (acc[c] = Math.random() < 0.35 ? pick(c) : null));
+      // A base top (tee, shirt or one of your own top categories), sometimes a tee under it, sometimes a sweater over.
       const layers: Look['layers'] = {};
-      const base = rand<Category>(['tops', 'shirts']);
-      layers[base] = rand(itemsOf[base]).id;
-      if (base === 'shirts' && Math.random() < 0.3) layers.tops = rand(itemsOf.tops).id;
-      if (Math.random() < 0.4) layers.sweaters = rand(itemsOf.sweaters).id;
-      return { ...st, wearing: { layers, bottom: rand(itemsOf[rand(BOTTOMS)]).id, acc } };
+      const bases = filled(topRow.cats.filter((c) => c !== 'sweaters'));
+      const base = bases.length ? rand(bases) : null;
+      if (base) layers[base] = pick(base);
+      if (base && base !== 'tops' && Math.random() < 0.3) layers.tops = pick('tops');
+      if (Math.random() < 0.4) layers.sweaters = pick('sweaters');
+      const bottoms = filled(bottomRow.cats);
+      return { ...st, wearing: { layers, bottom: bottoms.length ? pick(rand(bottoms)) : null, acc } };
     });
   const save = () => {
     if (isEmpty(s.wearing)) return alert('Put something on first, then save the outfit.');
@@ -256,7 +290,7 @@ export function ClosetPage() {
         <input ref={fileInput} type="file" accept="image/*" className="sr" tabIndex={-1} aria-hidden="true" onChange={onFile} />
 
         <main className="fx-main cl-main">
-          {ROWS.map((r) => {
+          {cats.rows.map((r) => {
             const cat = s.tab[r.key];
             return (
               <CategoryRow
@@ -268,7 +302,8 @@ export function ClosetPage() {
                 noun={r.noun}
                 cats={r.cats}
                 cat={cat}
-                items={itemsOf[cat]}
+                catalog={cats}
+                items={itemsIn(cat)}
                 offset={s.off[cat] ?? 0}
                 isWorn={isWorn(r.key)}
                 hint={
@@ -284,6 +319,10 @@ export function ClosetPage() {
                 onAdd={() => startAdd(cat)}
                 onEdit={(it) => setDraft({ id: it.id, img: it.img!, name: it.name, cat: it.cat })}
                 onRemove={removeOwn}
+                onNewCategory={() => setCatDraft({ row: r.key, name: '' })}
+                onEditCategory={(c) =>
+                  setCatDraft({ id: c, row: r.key, name: cats.label(c), count: s.added.filter((a) => a.cat === c).length })
+                }
               />
             );
           })}
@@ -432,7 +471,7 @@ export function ClosetPage() {
                     </span>
                     <span className="cl-own-name">
                       {a.name}
-                      <span className="fx-muted fx-small"> · {LABELS[a.cat]}</span>
+                      <span className="fx-muted fx-small"> · {cats.label(a.cat)}</span>
                     </span>
                     <button
                       type="button"
@@ -459,7 +498,8 @@ export function ClosetPage() {
         onSave={saveTo}
         onClose={() => setSaving(false)}
       />
-      <ClothesDialog draft={draft} onSave={saveDraft} onRemove={(id) => removeOwn({ id, name: get(id)?.name ?? 'this' })} onClose={() => setDraft(null)} />
+      <CategoryDialog draft={catDraft} onSave={saveCategory} onDelete={deleteCategory} onClose={() => setCatDraft(null)} />
+      <ClothesDialog draft={draft} cat={cats} onSave={saveDraft} onRemove={(id) => removeOwn({ id, name: get(id)?.name ?? 'this' })} onClose={() => setDraft(null)} />
     </OsWindow>
   );
 }

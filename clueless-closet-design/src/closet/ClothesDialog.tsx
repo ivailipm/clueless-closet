@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
-import { ROWS, LABELS, type Category } from './data';
+import type { Catalog, Category } from './data';
 
 export type ClothesDraft = {
   /** Set when editing an existing upload. */
@@ -13,13 +13,14 @@ export type ClothesDraft = {
 
 type Props = {
   draft: ClothesDraft | null;
+  cat: Catalog;
   onSave: (d: ClothesDraft) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
 };
 
 /** Window for adding a photo of your own clothes (or editing one): preview, name and category. */
-export function ClothesDialog({ draft, onSave, onRemove, onClose }: Props) {
+export function ClothesDialog({ draft, cat, onSave, onRemove, onClose }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const [form, setForm] = useState<ClothesDraft | null>(draft);
 
@@ -79,11 +80,11 @@ export function ClothesDialog({ draft, onSave, onRemove, onClose }: Props) {
               value={form.cat}
               onChange={(e) => setForm({ ...form, cat: e.target.value as Category })}
             >
-              {ROWS.map((r) => (
+              {cat.rows.map((r) => (
                 <optgroup key={r.key} label={r.title}>
                   {r.cats.map((c) => (
                     <option key={c} value={c}>
-                      {LABELS[c]}
+                      {cat.label(c)}
                     </option>
                   ))}
                 </optgroup>

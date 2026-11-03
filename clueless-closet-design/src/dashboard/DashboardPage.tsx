@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { EXTRAS, layerIds, STYLE_COLOR } from '../closet/data';
+import { extraIds, layerIds, STYLE_COLOR } from '../closet/data';
 import { OutfitThumb } from '../closet/OutfitThumb';
 import { Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
@@ -298,7 +298,7 @@ export function DashboardPage() {
                       <span className="px fx-small">{o.name}</span>
                       <OutfitThumb look={o} get={d.get} />
                       <span className="fx-small">
-                        {[...layerIds(o), o.bottom, ...EXTRAS.map((x) => o.acc[x])]
+                        {[...layerIds(o), o.bottom, ...extraIds(o)]
                           .map((id) => d.get(id)?.name)
                           .filter(Boolean)
                           .join(', ')}

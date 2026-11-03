@@ -192,6 +192,15 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
   border: 2px solid; border-color: #FFF8E8 #9C8A64 #9C8A64 #FFF8E8; box-shadow: 0 0 0 1px var(--fx-navy);
 }
 .cl-tab.on { color: #FFFFFF; background: var(--fx-pink); border-color: #8E1E5A #FFC2DE #FFC2DE #8E1E5A; }
+.cl-tab-icon { min-width: 34px; padding: 0 8px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+.cl-tab-icon .ico path { stroke: var(--fx-text); }
+.cl-empty-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; min-height: 150px; margin: 12px;
+  padding: 12px; text-align: center; font-size: 14px; color: var(--fx-text); border: 2px dashed #A9A4E0; background: #FBFAFF;
+}
+.cl-empty-row p { margin: 0; }
+.cl-cat-dialog { width: min(420px, calc(100vw - 32px)); }
+.cl-cat-dialog .fx-field { width: 100%; margin-top: 4px; }
 .cl-carousel { display: flex; align-items: center; gap: 10px; padding: 12px 10px 4px; }
 .cl-arrow {
   flex: none; width: 52px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0;

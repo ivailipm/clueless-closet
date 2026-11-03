@@ -1,40 +1,67 @@
 import type { ShapeName } from '../shared/theme';
 
-export type Category =
+export type BuiltInCategory =
   | 'tops' | 'sweaters' | 'shirts'
   | 'jeans' | 'skirts' | 'trousers'
   | 'jackets' | 'bags' | 'scarves' | 'gloves' | 'hats';
+
+/** A built-in category, or the id of one you made (`c-…`). */
+export type Category = string;
 
 export type Item = { id: string; cat: Category; name: string; color: string; shape: ShapeName; img?: string };
 
 export type RowKey = 'top' | 'bottom' | 'acc';
 
-export const TOPS: Category[] = ['tops', 'sweaters', 'shirts'];
-export const BOTTOMS: Category[] = ['jeans', 'skirts', 'trousers'];
-export const EXTRAS: Category[] = ['jackets', 'bags', 'scarves', 'gloves', 'hats'];
+/** A category you added to a row, e.g. "Going out tops" in the top half or "Jewellery" in extras. */
+export type CustomCategory = { id: string; name: string; row: RowKey };
 
-export const ROWS: { key: RowKey; num: string; title: string; sub: string; cats: Category[]; noun: string }[] = [
+export const TOPS: BuiltInCategory[] = ['tops', 'sweaters', 'shirts'];
+export const BOTTOMS: BuiltInCategory[] = ['jeans', 'skirts', 'trousers'];
+export const EXTRAS: BuiltInCategory[] = ['jackets', 'bags', 'scarves', 'gloves', 'hats'];
+
+export const ROWS: { key: RowKey; num: string; title: string; sub: string; cats: BuiltInCategory[]; noun: string }[] = [
   { key: 'top', num: '01', title: 'Top half', sub: 'layer it!', cats: TOPS, noun: 'tops' },
   { key: 'bottom', num: '02', title: 'Bottom half', sub: 'pick one', cats: BOTTOMS, noun: 'bottoms' },
   { key: 'acc', num: '03', title: 'Extras', sub: 'accessorize!', cats: EXTRAS, noun: 'extras' },
 ];
 
-/** Which closet row a category belongs to. */
-export const rowOf = (c: Category): RowKey => (TOPS.includes(c) ? 'top' : BOTTOMS.includes(c) ? 'bottom' : 'acc');
-
-export const SHAPE: Record<Category, ShapeName> = {
+const SHAPE: Record<BuiltInCategory, ShapeName> = {
   tops: 'tee', sweaters: 'knit', shirts: 'knit',
   jeans: 'pants', skirts: 'skirt', trousers: 'pants',
   jackets: 'jacket', bags: 'bag', scarves: 'scarf', gloves: 'glove', hats: 'hat',
 };
+/** Fallback drawing for pieces in your own categories (they always have a photo, so this rarely shows). */
+const ROW_SHAPE: Record<RowKey, ShapeName> = { top: 'tee', bottom: 'skirt', acc: 'bag' };
 
-export const LABELS: Record<Category, string> = {
+const LABELS: Record<BuiltInCategory, string> = {
   tops: 'Tops', sweaters: 'Sweaters', shirts: 'Shirts',
   jeans: 'Jeans', skirts: 'Skirts', trousers: 'Trousers',
   jackets: 'Jackets', bags: 'Bags', scarves: 'Scarves', gloves: 'Gloves', hats: 'Hats',
 };
 
-const RAW: Record<Category, [string, string][]> = {
+const isBuiltIn = (c: Category): c is BuiltInCategory => c in LABELS;
+
+/**
+ * Everything about categories, built-in plus your own: which row each is in, its label and fallback shape.
+ * Build it once per render with `catalog(state.customCats)`.
+ */
+export function catalog(custom: CustomCategory[]) {
+  const byId = new Map(custom.map((c) => [c.id, c]));
+  const rows = ROWS.map((r) => ({ ...r, cats: [...r.cats, ...custom.filter((c) => c.row === r.key).map((c) => c.id)] as Category[] }));
+  const rowOf = (c: Category): RowKey =>
+    isBuiltIn(c) ? (TOPS.includes(c) ? 'top' : BOTTOMS.includes(c) ? 'bottom' : 'acc') : byId.get(c)?.row ?? 'acc';
+  return {
+    rows,
+    rowOf,
+    label: (c: Category) => (isBuiltIn(c) ? LABELS[c] : byId.get(c)?.name ?? 'Other'),
+    shape: (c: Category): ShapeName => (isBuiltIn(c) ? SHAPE[c] : ROW_SHAPE[rowOf(c)]),
+    isCustom: (c: Category) => byId.has(c),
+    extras: rows[2].cats,
+  };
+}
+export type Catalog = ReturnType<typeof catalog>;
+
+const RAW: Record<BuiltInCategory, [string, string][]> = {
   tops: [['White baby tee', '#F6F3EE'], ['Cherry crop top', '#D94155'], ['Lilac tee', '#C9B6E4'], ['Butter tank', '#F7DC6F'], ['Black fitted tee', '#2B2B33'], ['Mint tee', '#A8E0C8']],
   sweaters: [['Cream cable knit', '#EFE6D2'], ['Pink mohair', '#F4A9C0'], ['Navy v-neck', '#2E3A6B'], ['Sage cardigan', '#A9BFA0'], ['Oatmeal turtleneck', '#D9C7A7']],
   shirts: [['Oxford blue shirt', '#A9C3E8'], ['White button-up', '#FAFAFA'], ['Red gingham shirt', '#E57373'], ['Striped shirt', '#DCE6F2']],
@@ -48,15 +75,21 @@ const RAW: Record<Category, [string, string][]> = {
   hats: [['Pink bucket hat', '#F2B5C8'], ['Black beanie', '#2B2B33'], ['Cream beret', '#EFE6D2']],
 };
 
-export const BUILT_IN = Object.fromEntries(
-  (Object.keys(RAW) as Category[]).map((c) => [
+export const BUILT_IN: Partial<Record<Category, Item[]>> = Object.fromEntries(
+  (Object.keys(RAW) as BuiltInCategory[]).map((c) => [
     c,
     RAW[c].map(([name, color], i): Item => ({ id: c + i, cat: c, name, color, shape: SHAPE[c] })),
   ]),
-) as Record<Category, Item[]>;
+);
 
-/** Top-half layers, back to front: tee under shirt under sweater. */
-export const LAYER_ORDER: Category[] = ['tops', 'shirts', 'sweaters'];
+/** Built-in items in a category (none for your own categories). */
+export const builtIn = (c: Category): Item[] => BUILT_IN[c] ?? [];
+
+/**
+ * Top-half layers, back to front: tee, then your own top categories, then shirt, then sweater.
+ * (A "going out top" sits with the tees, under shirts and sweaters.)
+ */
+const LAYER_FRONT: Category[] = ['shirts', 'sweaters'];
 
 type Slots = Partial<Record<Category, string | null>>;
 
@@ -97,6 +130,8 @@ export type ClosetState = {
   off: Partial<Record<Category, number>>;
   wearing: Look;
   added: Item[];
+  /** Categories you added to the rows. */
+  customCats: CustomCategory[];
   collections: Collection[];
   /** Collection Save outfit picks by default. */
   lastCollection: string | null;
@@ -107,6 +142,7 @@ export const INITIAL_CLOSET: ClosetState = {
   off: {},
   wearing: { layers: { tops: 'tops1' }, bottom: 'skirts0', acc: { bags: 'bags1' } },
   added: [],
+  customCats: [],
   collections: [],
   lastCollection: null,
 };
@@ -123,7 +159,7 @@ type OldLook = Look & { top?: string | null; id?: string };
 export function migrateCloset(raw: ClosetState & { saved?: OldLook[] }): ClosetState {
   const catOf = (id: string): Category | undefined =>
     raw.added?.find((a) => a.id === id)?.cat ??
-    (Object.keys(BUILT_IN) as Category[]).find((c) => BUILT_IN[c].some((i) => i.id === id));
+    Object.keys(BUILT_IN).find((c) => builtIn(c).some((i) => i.id === id));
   const fix = <L extends Look>(l: L & { top?: string | null }): L => {
     if (l.layers) return l;
     const { top, ...rest } = l;
@@ -158,5 +194,14 @@ export function migrateCloset(raw: ClosetState & { saved?: OldLook[] }): ClosetS
 
 /** Worn top-half items, back to front. */
 export function layerIds(l: Look): string[] {
-  return LAYER_ORDER.map((c) => l.layers?.[c]).filter((x): x is string => !!x);
+  const cats = Object.keys(l.layers ?? {});
+  const back = ['tops', ...cats.filter((c) => c !== 'tops' && !LAYER_FRONT.includes(c))];
+  return [...back, ...LAYER_FRONT].map((c) => l.layers?.[c]).filter((x): x is string => !!x);
+}
+
+/** Worn extras: built-in order first, then your own extras categories. */
+export function extraIds(l: Look): string[] {
+  const cats = Object.keys(l.acc ?? {});
+  const order = [...EXTRAS, ...cats.filter((c) => !EXTRAS.includes(c as BuiltInCategory))];
+  return order.map((c) => l.acc?.[c]).filter((x): x is string => !!x);
 }

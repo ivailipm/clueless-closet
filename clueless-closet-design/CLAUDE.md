@@ -37,6 +37,9 @@ pink hearts, beige tabs, bottom toolbar). The pill reads "♥ MY CLOSET ♥ < PI
 - The built-in clothes are placeholder drawings; uploads get a pencil (rename / change category / remove) and ×
 - Click an item to wear it; extras toggle on/off, one per extras category
 - Top half layers: one tee, shirt and sweater at once (back to front), each toggled on/off
+- Your own categories: a + tab on each row adds one (e.g. "Going out tops", "Shorts", "Jewellery"); a pencil tab
+  renames or deletes it (with its pieces). They behave like the row they're in; own top categories layer with the tees,
+  under shirts and sweaters. Stored as `customCats`; use `catalog(customCats)` for rows, labels and shapes
 - Side panels: Today's outfit (Shuffle, Save outfit, Clear), Extras, My collections (wear a saved outfit), My uploads
 - Save outfit opens a window: name the outfit and pick a collection (e.g. winter-outfits) or start a new one with a style
 

@@ -1,5 +1,5 @@
 import { ClothingArt } from '../shared/icons';
-import { EXTRAS, layerIds, type Item, type Look } from './data';
+import { extraIds, layerIds, type Item, type Look } from './data';
 import { Layers } from './Layers';
 import type { GetItem } from './store';
 
@@ -7,7 +7,7 @@ import type { GetItem } from './store';
 export function OutfitThumb({ look, get, size = 'md' }: { look: Look; get: GetItem; size?: 'sm' | 'md' }) {
   const top = layerIds(look).map(get).filter((x): x is Item => !!x);
   const bottom = get(look.bottom);
-  const extras = EXTRAS.map((c) => get(look.acc[c])).filter((x): x is Item => !!x);
+  const extras = extraIds(look).map(get).filter((x): x is Item => !!x);
   const h = size === 'sm' ? 40 : 56;
   return (
     <span className={`cl-thumb cl-thumb-${size}`}>

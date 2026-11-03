@@ -1,7 +1,7 @@
 import { Panel } from '../dashboard/parts';
 import { Icon } from '../dashboard/icons';
 import { ClothingArt, Tri } from '../shared/icons';
-import { LABELS, type Category, type Item } from './data';
+import type { Catalog, Category, Item } from './data';
 
 type Props = {
   id: string;
@@ -11,6 +11,7 @@ type Props = {
   noun: string;
   cats: Category[];
   cat: Category;
+  catalog: Catalog;
   items: Item[];
   offset: number;
   isWorn: (it: Item) => boolean;
@@ -21,6 +22,8 @@ type Props = {
   onAdd: () => void;
   onEdit: (it: Item) => void;
   onRemove: (it: Item) => void;
+  onNewCategory: () => void;
+  onEditCategory: (c: Category) => void;
 };
 
 const PER_PAGE = 3;
@@ -29,6 +32,7 @@ const PER_PAGE = 3;
 export function CategoryRow(p: Props) {
   const n = p.items.length;
   const off = n ? ((p.offset % n) + n) % n : 0;
+  const label = p.catalog.label;
   const visible = Array.from({ length: Math.min(PER_PAGE, n) }, (_, i) => p.items[(off + i) % n]);
 
   return (
@@ -46,13 +50,42 @@ export function CategoryRow(p: Props) {
               aria-pressed={c === p.cat}
               onClick={() => p.onTab(c)}
             >
-              {LABELS[c]}
+              {label(c)}
             </button>
           ))}
+          {p.catalog.isCustom(p.cat) && (
+            <button
+              type="button"
+              className="cl-tab cl-tab-icon"
+              aria-label={`Rename or delete ${label(p.cat)}`}
+              onClick={() => p.onEditCategory(p.cat)}
+            >
+              <Icon name="pencil" size={13} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="cl-tab cl-tab-icon px"
+            aria-label={`Add a category to ${p.title}`}
+            title="Add your own category"
+            onClick={p.onNewCategory}
+          >
+            +
+          </button>
         </div>
       }
-      footer={{ label: `+ Add your own ${LABELS[p.cat].toLowerCase()}`, onClick: p.onAdd }}
+      footer={{ label: `+ Add your own ${label(p.cat).toLowerCase()}`, onClick: p.onAdd }}
     >
+      {n === 0 ? (
+        <div className="cl-empty-row">
+          <p>
+            Nothing in <strong>{label(p.cat)}</strong> yet.
+          </p>
+          <button type="button" className="fx-btn fx-btn-pink px" onClick={p.onAdd}>
+            <Icon name="camera" size={14} /> Add a photo
+          </button>
+        </div>
+      ) : (
       <div className="cl-carousel">
         <button type="button" className="cl-arrow" onClick={() => p.onShift(-1)} aria-label={`Previous ${p.noun}`}>
           <Tri dir="left" double width={24} height={14} />
@@ -97,8 +130,9 @@ export function CategoryRow(p: Props) {
           <Tri dir="right" double width={24} height={14} />
         </button>
       </div>
+      )}
       <p className="cl-info">
-        {n} {LABELS[p.cat].toLowerCase()} in your closet{p.hint ? ` · ${p.hint}` : ''}
+        {n} {label(p.cat).toLowerCase()} in your closet{p.hint ? ` · ${p.hint}` : ''}
       </p>
     </Panel>
   );
