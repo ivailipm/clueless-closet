@@ -51,3 +51,40 @@ export function usePersistentState<T>(
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
+
+const BACKUP_APP = 'clueless-closet';
+
+/** Download everything this app keeps in localStorage as one JSON file. */
+export function exportBackup() {
+  const data: Record<string, unknown> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k?.startsWith(PREFIX)) continue;
+    try {
+      data[k.slice(PREFIX.length)] = JSON.parse(localStorage.getItem(k) ?? 'null');
+    } catch {
+      /* skip unreadable entries */
+    }
+  }
+  const blob = new Blob([JSON.stringify({ app: BACKUP_APP, version: 1, savedAt: new Date().toISOString(), data })], {
+    type: 'application/json',
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `clueless-closet-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/** Restore a backup file made by exportBackup. Replaces current data. */
+export async function importBackup(file: File): Promise<void> {
+  const parsed = JSON.parse(await file.text()) as { app?: string; data?: Record<string, unknown> };
+  if (parsed.app !== BACKUP_APP || !parsed.data || typeof parsed.data !== 'object') {
+    throw new Error('This is not a Clueless Closet backup file.');
+  }
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k?.startsWith(PREFIX)) localStorage.removeItem(k);
+  }
+  for (const [k, v] of Object.entries(parsed.data)) localStorage.setItem(PREFIX + k, JSON.stringify(v));
+}

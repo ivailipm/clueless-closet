@@ -74,6 +74,11 @@ export function DashboardPage() {
     setNewOpen(false);
   };
 
+  const openNew = () => {
+    setNewOpen(true);
+    if (!show.repos) setS((st) => ({ ...st, view: 'repos' }));
+  };
+
   // Calendar for the real current month (+ offset)
   const today = new Date();
   const first = new Date(today.getFullYear(), today.getMonth() + monthOff, 1);
@@ -87,17 +92,54 @@ export function DashboardPage() {
       app="dashboard"
       title="Code Closet.exe"
       subtitle="where my repos get dressed"
-      menu={['File', 'Edit', 'View', 'Repos', 'Help']}
+      menus={[
+        { label: 'File', items: [{ label: 'New repo…', onSelect: openNew }] },
+        {
+          label: 'Edit',
+          items: [
+            {
+              label: 'Unstar all repos',
+              disabled: starCount === 0,
+              onSelect: () => setS((st) => ({ ...st, starred: {} })),
+            },
+            {
+              label: 'Clear activity feed',
+              disabled: s.activity.length === 0,
+              onSelect: () => setS((st) => ({ ...st, activity: [] })),
+            },
+          ],
+        },
+        {
+          label: 'View',
+          items: NAV.map(([key, label]) => ({
+            label,
+            checked: v === key,
+            onSelect: () => setS((st) => ({ ...st, view: key })),
+          })),
+        },
+        {
+          label: 'Repos',
+          items: [
+            { label: 'First repos', onSelect: () => setS((st) => ({ ...st, view: show.repos ? st.view : 'repos', off: 0 })) },
+            {
+              label: 'Last repos',
+              onSelect: () =>
+                setS((st) => ({ ...st, view: show.repos ? st.view : 'repos', off: Math.max(0, st.repos.length - PER_PAGE) })),
+            },
+            { separator: true },
+            {
+              label: 'Reset dashboard…',
+              onSelect: () =>
+                confirm('Reset the dashboard? Stars, reviews, calendar, new repos and activity are cleared.') &&
+                setS((st) => ({ ...INITIAL_DASH, avatar: st.avatar })),
+            },
+          ],
+        },
+        { label: 'Help', items: [] },
+      ]}
       footer={
         <>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              setNewOpen(true);
-              if (!show.repos) setS((st) => ({ ...st, view: 'repos' }));
-            }}
-          >
+          <button type="button" className="btn" onClick={openNew}>
             + New repo
           </button>
           <Link to="/" className="btn">

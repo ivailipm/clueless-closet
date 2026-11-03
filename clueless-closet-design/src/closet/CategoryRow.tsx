@@ -18,6 +18,7 @@ type Props = {
   onShift: (delta: number) => void;
   onPick: (it: Item) => void;
   onAdd: (dataUrl: string, file: File) => void;
+  onRemove: (it: Item) => void;
 };
 
 const PER_PAGE = 3;
@@ -61,8 +62,8 @@ export function CategoryRow(p: Props) {
           {visible.map((it) => {
             const sel = p.isWorn(it);
             return (
+              <div key={it.id} className="tile-wrap">
               <button
-                key={it.id}
                 type="button"
                 className="tile"
                 aria-pressed={sel}
@@ -75,6 +76,17 @@ export function CategoryRow(p: Props) {
                 <span className="name">{it.name}</span>
                 {sel && <span className="badge px">Wearing</span>}
               </button>
+              {it.img && (
+                <button
+                  type="button"
+                  className="remove px"
+                  aria-label={`Remove ${it.name} from closet`}
+                  onClick={() => p.onRemove(it)}
+                >
+                  x
+                </button>
+              )}
+              </div>
             );
           })}
         </div>

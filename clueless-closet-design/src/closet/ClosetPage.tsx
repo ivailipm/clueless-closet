@@ -78,6 +78,30 @@ export function ClosetPage() {
       };
     });
 
+  /** Remove uploaded items and anything that still points at them. */
+  const purge = (ids: Set<string>) =>
+    setS((st) => {
+      const drop = (id: string | null | undefined) => (id && ids.has(id) ? null : id ?? null);
+      const clean = (l: Look): Look => ({
+        top: drop(l.top),
+        bottom: drop(l.bottom),
+        acc: Object.fromEntries(Object.entries(l.acc).map(([c, id]) => [c, drop(id)])),
+      });
+      return {
+        ...st,
+        added: st.added.filter((a) => !ids.has(a.id)),
+        wearing: clean(st.wearing),
+        saved: st.saved
+          .map((o) => ({ ...clean(o), id: o.id }))
+          .filter((o) => o.top || o.bottom || Object.values(o.acc).some(Boolean)),
+      };
+    });
+
+  const removeOwn = (it: Item) => confirm(`Remove "${it.name}" from your closet?`) && purge(new Set([it.id]));
+  const removeAllOwn = () =>
+    confirm(`Remove all ${s.added.length} clothes you uploaded? Built-in clothes stay.`) &&
+    purge(new Set(s.added.map((a) => a.id)));
+
   const shuffle = () =>
     setS((st) => {
       const acc: Look['acc'] = {};
@@ -98,7 +122,44 @@ export function ClosetPage() {
       app="closet"
       title="My Closet.exe"
       subtitle="pick · match · save"
-      menu={['File', 'Edit', 'View', 'Closet', 'Help']}
+      menus={[
+        {
+          label: 'File',
+          items: [
+            { label: 'Save outfit', onSelect: save },
+            { label: 'Clear outfit', onSelect: clear },
+          ],
+        },
+        {
+          label: 'Edit',
+          items: [
+            { label: 'Shuffle outfit', onSelect: shuffle },
+            {
+              label: 'Take off all extras',
+              disabled: extras.length === 0,
+              onSelect: () => setS((st) => ({ ...st, wearing: { ...st.wearing, acc: {} } })),
+            },
+          ],
+        },
+        {
+          label: 'Closet',
+          items: [
+            {
+              label: 'Delete saved looks',
+              disabled: s.saved.length === 0,
+              onSelect: () => confirm('Delete all saved looks?') && setS((st) => ({ ...st, saved: [] })),
+            },
+            { label: 'Remove my uploads…', disabled: s.added.length === 0, onSelect: removeAllOwn },
+            { separator: true },
+            {
+              label: 'Reset closet…',
+              onSelect: () =>
+                confirm('Reset the closet? This removes your uploads and saved looks.') && setS(INITIAL_CLOSET),
+            },
+          ],
+        },
+        { label: 'Help', items: [] },
+      ]}
       footer={
         <>
           <span className="sunk grow">{total} items in closet</span>
@@ -128,6 +189,7 @@ export function ClosetPage() {
                 onShift={(d) => setS((st) => ({ ...st, off: { ...st.off, [cat]: (st.off[cat] ?? 0) + d } }))}
                 onPick={(it) => wear(r.key, it)}
                 onAdd={(url, file) => addOwn(r.key, cat, url, file)}
+                onRemove={removeOwn}
               />
             );
           })}
