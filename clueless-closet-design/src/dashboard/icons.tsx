@@ -25,6 +25,9 @@ const PATHS = {
   calendar: 'M4 6 H20 V20 H4 Z M4 10 H20 M8 3 V7 M16 3 V7',
   check: 'M4 12 L10 18 L20 6',
   trash: 'M5 7 H19 M9 7 V4 H15 V7 M7 7 L8 20 H16 L17 7',
+  pencil: 'M4 20 L5 15 L16 4 L20 8 L9 19 Z M14 6 L18 10',
+  shuffle: 'M3 7 H7 Q11 7 13 12 Q15 17 19 17 H21 M18 14 L21 17 L18 20 M3 17 H7 Q9 17 10.5 15 M13.5 9 Q15 7 19 7 H21 M18 4 L21 7 L18 10',
+  hanger: 'M10 5 A2 2 0 1 1 12 7 V9 L3 16 H21 L12 9',
   camera: 'M4 8 H8 L10 5 H14 L16 8 H20 V19 H4 Z M12 10 A3.5 3.5 0 1 0 12.01 10 Z',
 } as const;
 

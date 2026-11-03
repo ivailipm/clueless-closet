@@ -27,12 +27,17 @@ paths, sample data and behaviour from them, and rebuild everything as normal Rea
 
 ## Closet screen
 
-- Three rows: top half (Tops, Sweaters, Shirts), bottom half (Jeans, Skirts, Trousers),
-  extras (Jackets, Bags, Scarves, Gloves, Hats)
-- Each row: category tabs, a carousel showing 3 items with ◀◀ ▶▶ arrows (wraps around), and "+ Add your own" upload
+Same "fashion" look as the dashboard (royal-blue frame, leopard area that can take a photo, blue panel headers with
+pink hearts, beige tabs, bottom toolbar). The pill reads "♥ MY CLOSET ♥ < PICK · MATCH · SAVE >".
+
+- Three row panels: top half (Tops, Sweaters, Shirts), bottom half (Jeans, Skirts, Trousers),
+  extras (Jackets, Bags, Scarves, Gloves, Hats); category tabs sit in each panel header
+- Each row: a carousel showing 3 items with ◀◀ ▶▶ arrows (wraps around); the pink footer "+ Add your own …" opens
+  the Add to closet window (photo preview, name, category) with the row's current tab preselected
+- The built-in clothes are placeholder drawings; uploads get a pencil (rename / change category / remove) and ×
 - Click an item to wear it; extras toggle on/off, one per extras category
 - Top half layers: one tee, shirt and sweater at once (back to front), each toggled on/off
-- Side panel builds the outfit (top, bottom, extras) with Shuffle, Save outfit, Clear, and saved looks you can re-wear
+- Side panels: Today's outfit (Shuffle, Save outfit, Clear), Extras, Saved looks you can re-wear, My uploads
 
 ## Dashboard screen
 

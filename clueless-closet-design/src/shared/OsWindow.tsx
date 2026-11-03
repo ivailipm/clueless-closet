@@ -45,6 +45,8 @@ type Props = {
   brand?: string;
   /** fashion only: text in < > next to the brand. */
   tagline?: string;
+  /** fashion only: first button on the right of the top strip (default: Sign out, back to the closet). */
+  exitLink?: { to: string; label: string };
   /**
    * Screen-specific menus, in order. "File", "View" and "Help" get shared items
    * (backup, wallpaper, about) added automatically, and are created if missing.
@@ -56,7 +58,9 @@ type Props = {
 };
 
 /** 2000s-style desktop: wallpaper, window frame with title + menu bar, and a taskbar with a clock. */
-export function OsWindow({ app, title, subtitle, variant = 'classic', brand, tagline, menus, children, footer }: Props) {
+export function OsWindow({
+  app, title, subtitle, variant = 'classic', brand, tagline, exitLink = { to: '/', label: 'Sign out' }, menus, children, footer,
+}: Props) {
   const clock = useClock();
   const wp = useWallpaper(app);
   const [wallMsg, setWallMsg] = useState('');
@@ -218,8 +222,8 @@ export function OsWindow({ app, title, subtitle, variant = 'classic', brand, tag
             </h1>
             <div className="fx-top-right">
               {resetWall}
-              <Link to="/" className="fx-btn px">
-                Sign out
+              <Link to={exitLink.to} className="fx-btn px">
+                {exitLink.label}
               </Link>
               <button type="button" className="fx-btn px" onClick={api.openAbout}>
                 Help

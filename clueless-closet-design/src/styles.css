@@ -173,65 +173,72 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 }
 .h3 { margin: 0; font-size: 14px; font-weight: 400; }
 
-/* ---------- Closet ---------- */
-.closet-main {
-  flex: 999 1 560px; min-width: 0; padding: 24px; display: flex; flex-direction: column; gap: 28px;
-}
-.row { display: flex; flex-direction: column; gap: 12px; }
-.row-dashed { border-top: 3px dashed var(--ink); padding-top: 24px; }
-.row-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
-.carousel { display: flex; align-items: center; gap: 12px; }
-.tiles { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.tile {
-  position: relative; display: flex; flex-direction: column; gap: 8px; padding: 12px;
-  border-width: 3px; border-style: solid; text-align: left; min-width: 0;
-}
-.art { display: block; height: 140px; }
-.name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile-wrap { position: relative; min-width: 0; display: flex; }
-.tile-wrap > .tile { flex: 1; }
-.remove {
-  position: absolute; left: 6px; top: 6px; width: 36px; height: 36px; padding: 0; display: flex; align-items: center;
-  justify-content: center; font-size: 14px; background: var(--face); border: 2px solid; border-color: var(--up);
-  box-shadow: 0 0 0 1px var(--ink);
-}
-.remove:active { border-color: var(--down); }
-.badge { position: absolute; top: 8px; right: 8px; font-size: 11px; padding: 4px 6px; color: #fff; background: var(--accent); }
-.row-foot {
-  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
-  font-size: 13px; color: var(--muted); padding: 0 76px;
-}
-
-.outfit {
-  flex: 1 1 320px; min-width: 0; border-left: 3px solid var(--ink); background: #FFF0F5; padding: 24px;
-  display: flex; flex-direction: column; gap: 18px;
-}
-.mannequin {
-  background: #FFFFFF; border: 3px solid var(--ink); padding: 16px; display: flex; flex-direction: column;
-  align-items: center; gap: 6px;
-}
+/* ---------- Closet (fashion look, shares the dashboard's fx-* pieces) ---------- */
 .layers { position: relative; flex: none; }
 .layer { position: absolute; }
-.piece-name { text-align: center; font-size: 13px; font-weight: 600; }
-.empty {
-  display: flex; align-items: center; justify-content: center; border: 2px dashed #8B8798; color: var(--muted); font-size: 13px;
+.cl-main { flex: 999 1 560px; }
+.cl-side { position: relative; z-index: 1; flex: 1 1 300px; min-width: 0; padding: 12px 12px 12px 0; display: flex; flex-direction: column; gap: 12px; }
+.cl-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.cl-tab {
+  min-height: 34px; padding: 0 10px; font-size: 11px; color: var(--fx-text); background: var(--fx-beige);
+  border: 2px solid; border-color: #FFF8E8 #9C8A64 #9C8A64 #FFF8E8; box-shadow: 0 0 0 1px var(--fx-navy);
 }
-.stack { display: flex; flex-direction: column; gap: 10px; }
-.saved { border-top: 2px dashed var(--ink); padding-top: 16px; }
-.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.mini-card {
-  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 8px; background: #FFFFFF;
-  border: 2px solid var(--ink); text-align: left; min-width: 0; min-height: 44px;
+.cl-tab.on { color: #FFFFFF; background: var(--fx-pink); border-color: #8E1E5A #FFC2DE #FFC2DE #8E1E5A; }
+.cl-carousel { display: flex; align-items: center; gap: 10px; padding: 12px 10px 4px; }
+.cl-arrow {
+  flex: none; width: 52px; height: 48px; display: flex; align-items: center; justify-content: center; padding: 0;
+  background: var(--fx-beige); border: 3px solid; border-color: #FFF8E8 #9C8A64 #9C8A64 #FFF8E8; box-shadow: 0 0 0 2px var(--fx-navy);
 }
-.mini-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-x { position: absolute; top: 4px; right: 6px; font-size: 12px; }
-.actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.look {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px; background: #FFFFFF;
-  border: 2px solid var(--ink); min-width: 0;
+.cl-arrow:active { border-color: #9C8A64 #FFF8E8 #FFF8E8 #9C8A64; }
+.cl-arrow .tri path { fill: var(--fx-text); }
+.cl-tiles { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cl-tile-wrap { position: relative; min-width: 0; display: flex; }
+.cl-tile {
+  flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; padding: 0; text-align: left; background: #FFFFFF;
+  border: 2px solid var(--fx-navy); box-shadow: 0 0 0 2px #C7C2F5;
 }
-.look-label { font-size: 11px; color: var(--muted); }
+.cl-tile.on { box-shadow: 0 0 0 3px var(--fx-pink); background: #FFF0F7; }
+.cl-art { display: block; height: 130px; padding: 10px; }
+.cl-name {
+  display: block; padding: 6px 8px; font-size: 13px; font-weight: 600; color: var(--fx-text); background: var(--fx-lilac);
+  border-top: 2px solid var(--fx-navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cl-tile.on .cl-name { background: #FFD3E7; }
+.cl-badge { position: absolute; top: 6px; right: 6px; padding: 3px 6px; font-size: 10px; color: #FFFFFF; background: var(--fx-pink); border: 1px solid var(--fx-navy); }
+.cl-own { position: absolute; top: 6px; left: 6px; display: flex; gap: 4px; }
+.cl-own-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 13px; color: var(--fx-text);
+  background: #F4F1FF; border: 2px solid; border-color: #FFFFFF #7E7AC0 #7E7AC0 #FFFFFF; box-shadow: 0 0 0 1px var(--fx-navy);
+}
+.cl-own-btn .ico path { stroke: var(--fx-blue); }
+.cl-info { margin: 0; padding: 6px 12px 10px 72px; font-size: 12px; color: #6C69A0; }
+
+.cl-mannequin { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; background: #FFFFFF; }
+.cl-piece { font-size: 13px; font-weight: 600; text-align: center; color: var(--fx-text); }
+.cl-empty { display: flex; align-items: center; justify-content: center; font-size: 13px; color: #6C69A0; border: 2px dashed #A9A4E0; }
+.cl-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px 12px; border-top: 2px dashed #C7C2F5; }
+.cl-save { min-height: 40px; }
+.cl-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 12px 12px; }
+.cl-mini {
+  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 8px; min-width: 0; min-height: 44px; text-align: left;
+  background: #FFFFFF; border: 2px solid var(--fx-navy); box-shadow: 0 0 0 2px #C7C2F5;
+}
+.cl-look { align-items: center; text-align: center; }
+.cl-mini-name { font-size: 12px; font-weight: 600; color: var(--fx-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-mini-x { position: absolute; top: 3px; right: 6px; font-size: 12px; color: var(--fx-pink-dark); }
+.cl-own-list { list-style: none; margin: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+.cl-own-list li { display: flex; align-items: center; gap: 8px; padding: 4px; background: var(--fx-lilac); border: 1px solid #A9A4E0; }
+.cl-own-thumb { flex: none; width: 40px; height: 40px; background: #FFFFFF; }
+.cl-own-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--fx-text); overflow-wrap: anywhere; }
+
+.cl-dialog { width: min(560px, calc(100vw - 32px)); }
+.cl-dialog-body { display: grid; grid-template-columns: 180px 1fr; gap: 14px; align-items: start; }
+.cl-dialog-preview { width: 180px; height: 200px; padding: 8px; background: #FFFFFF; border: 2px solid var(--ink); }
+.cl-dialog-fields { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cl-dialog-fields .fx-field { flex: none; }
+.cl-dialog-photo { align-self: flex-start; margin-top: 6px; }
+.cl-dialog-photo:focus-within { outline: 3px solid #2F6FEB; outline-offset: 2px; }
+.cl-dialog .fx-dialog-actions { grid-column: 1 / -1; }
 
 /* ---------- Dashboard: "GitHub for fashionistas" ---------- */
 /* Shared icon look */
@@ -522,8 +529,6 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 /* ---------- Small screens ---------- */
 @media (max-width: 720px) {
   .desktop { padding: 12px 8px 120px; }
-  .closet-main, .outfit { padding: 14px; }
-  .outfit { border-left: 0; border-top: 3px solid var(--ink); }
   .fx-side { max-width: none; flex-basis: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .fx-avatar { height: 130px; }
   .fx-namecard { align-self: stretch; justify-content: center; }
@@ -536,14 +541,16 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
   .fx-brand { font-size: 20px; }
   .fx-pill { flex-wrap: wrap; justify-content: center; white-space: normal; }
   .window-fashion { padding: 0 4px 4px; }
-  .arrow { width: 44px; }
-  .carousel { gap: 6px; }
-  .tiles { gap: 6px; }
-  .tile { padding: 6px; }
-  .art { height: 90px; }
-  .name { font-size: 12px; }
-  .badge { font-size: 9px; top: 4px; right: 4px; }
-  .row-foot { padding: 0; }
   .subtitle { display: none; }
+  .cl-side { padding: 0 8px 8px; flex-basis: 100%; }
+  .cl-carousel { gap: 6px; padding: 10px 6px 4px; }
+  .cl-arrow { width: 40px; }
+  .cl-tiles { gap: 6px; }
+  .cl-art { height: 84px; padding: 6px; }
+  .cl-name { font-size: 11px; padding: 4px 6px; }
+  .cl-badge { font-size: 8px; top: 3px; right: 3px; padding: 2px 4px; }
+  .cl-info { padding-left: 12px; }
+  .cl-dialog-body { grid-template-columns: 1fr; }
+  .cl-dialog-preview { width: 100%; height: 180px; }
   .task-active { min-width: 0; }
 }

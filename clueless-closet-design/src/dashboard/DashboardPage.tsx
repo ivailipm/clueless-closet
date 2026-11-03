@@ -6,7 +6,7 @@ import { ClothingArt, Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
 import { OsWindow } from '../shared/OsWindow';
 import { readStored } from '../shared/storage';
-import { useWallpaper, WallpaperLayer, type Slot } from '../shared/wallpaper';
+import { useInsideBackground } from '../shared/InsideBackground';
 import { HANDLE, NAV, type View } from './data';
 import { Icon, type IconName } from './icons';
 import {
@@ -42,32 +42,8 @@ export function DashboardPage() {
   const [looks, setLooks] = useState<ReturnType<typeof readLookbook>>([]);
 
   // Photo background for the leopard area inside the window (leopard print until one is chosen).
-  const inside = useWallpaper('dashboard-inside', false);
-  const insideInputs = {
-    auto: useRef<HTMLInputElement>(null),
-    landscape: useRef<HTMLInputElement>(null),
-    portrait: useRef<HTMLInputElement>(null),
-  };
-  const [toast, setToast] = useState('');
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(''), 6000);
-    return () => clearTimeout(t);
-  }, [toast]);
-  const onInsideFile = (slot?: Slot) => async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.currentTarget;
-    const f = input.files?.[0];
-    input.value = '';
-    if (!f) return;
-    const saved = await inside.upload(f, slot);
-    if (!saved) return;
-    const other = saved === 'landscape' ? inside.wall.portrait : inside.wall.landscape;
-    setToast(
-      saved === 'landscape'
-        ? `Background set for computers${other ? '' : ' (also used on phones until you add a vertical photo)'}`
-        : `Background set for phones${other ? '' : ' (also used on computers until you add a horizontal photo)'}`,
-    );
-  };
+  // Kept on the old storage key so photos chosen before this refactor stay.
+  const inside = useInsideBackground('dashboard');
 
   const v = s.view;
   const counts: Partial<Record<View, number>> = {
@@ -130,12 +106,7 @@ export function DashboardPage() {
               onSelect: () => d.setView(key),
             })),
             { separator: true },
-            { label: 'Inside: leopard print', checked: !inside.showingPhoto, onSelect: () => inside.hidePhoto() },
-            { label: 'Inside: my photo', checked: inside.showingPhoto, disabled: !inside.hasPhoto, onSelect: inside.showPhoto },
-            { label: 'Change inside background…', onSelect: () => insideInputs.auto.current?.click() },
-            { label: 'Inside: upload computer photo (horizontal)…', onSelect: () => insideInputs.landscape.current?.click() },
-            { label: 'Inside: upload phone photo (vertical)…', onSelect: () => insideInputs.portrait.current?.click() },
-            { label: 'Inside: remove photos', disabled: !inside.hasPhoto, onSelect: inside.removeAll },
+            ...inside.menuItems,
           ],
         },
         {
@@ -185,24 +156,7 @@ export function DashboardPage() {
       {(api) => (
       <>
       <div className="fx-content">
-        {inside.showingPhoto && <WallpaperLayer wall={inside.wall} photo contained />}
-        {(['auto', 'landscape', 'portrait'] as const).map((k) => (
-          <input
-            key={k}
-            ref={insideInputs[k]}
-            type="file"
-            accept="image/*"
-            className="sr"
-            tabIndex={-1}
-            aria-hidden="true"
-            onChange={onInsideFile(k === 'auto' ? undefined : k)}
-          />
-        ))}
-        {toast && (
-          <div className="fx-toast" role="status">
-            {toast}
-          </div>
-        )}
+        {inside.node}
         <nav aria-label="Dashboard sections" className="fx-side">
           <label className="fx-avatar">
             {s.avatar ? (
@@ -264,7 +218,7 @@ export function DashboardPage() {
               type="button"
               className="fx-nav px"
               title="Photo for this leopard area. Horizontal photos are used on computers, vertical on phones."
-              onClick={() => insideInputs.auto.current?.click()}
+              onClick={() => inside.openUpload()}
             >
               <Icon name="camera" size={16} />
               <span className="fx-nav-label">Inside photo</span>

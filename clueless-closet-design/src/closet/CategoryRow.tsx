@@ -1,11 +1,13 @@
+import { Panel } from '../dashboard/parts';
+import { Icon } from '../dashboard/icons';
 import { ClothingArt, Tri } from '../shared/icons';
-import { pickImage } from '../shared/image';
-import { ACCENT, DOWN, INK, UP } from '../shared/theme';
 import { LABELS, type Category, type Item } from './data';
 
 type Props = {
+  id: string;
   num: string;
   title: string;
+  sub: string;
   noun: string;
   cats: Category[];
   cat: Category;
@@ -13,97 +15,91 @@ type Props = {
   offset: number;
   isWorn: (it: Item) => boolean;
   hint?: string;
-  dashed?: boolean;
   onTab: (c: Category) => void;
   onShift: (delta: number) => void;
   onPick: (it: Item) => void;
-  onAdd: (dataUrl: string, file: File) => void;
+  onAdd: () => void;
+  onEdit: (it: Item) => void;
   onRemove: (it: Item) => void;
 };
 
 const PER_PAGE = 3;
 
+/** One closet row: category tabs in the header, a wrapping 3-item carousel, and "+ Add your own" as the footer. */
 export function CategoryRow(p: Props) {
-  const id = `h-${p.title.toLowerCase().replace(/\s+/g, '-')}`;
   const n = p.items.length;
   const off = n ? ((p.offset % n) + n) % n : 0;
   const visible = Array.from({ length: Math.min(PER_PAGE, n) }, (_, i) => p.items[(off + i) % n]);
 
   return (
-    <section aria-labelledby={id} className={`row${p.dashed ? ' row-dashed' : ''}`}>
-      <div className="row-head">
-        <h2 id={id} className="px label">
-          {p.num} {p.title}
-        </h2>
-        <div role="group" aria-label={`${p.title} categories`} className="tabs">
-          {p.cats.map((c) => {
-            const on = c === p.cat;
-            return (
-              <button
-                key={c}
-                type="button"
-                className="tab"
-                aria-pressed={on}
-                onClick={() => p.onTab(c)}
-                style={{ background: on ? ACCENT : '#D4D0E0', color: on ? '#FFFFFF' : INK, borderColor: on ? DOWN : UP }}
-              >
-                {LABELS[c]}
-              </button>
-            );
-          })}
+    <Panel
+      id={p.id}
+      title={`${p.num} ${p.title}`}
+      sub={p.sub}
+      actions={
+        <div role="group" aria-label={`${p.title} categories`} className="cl-tabs">
+          {p.cats.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`cl-tab px${c === p.cat ? ' on' : ''}`}
+              aria-pressed={c === p.cat}
+              onClick={() => p.onTab(c)}
+            >
+              {LABELS[c]}
+            </button>
+          ))}
         </div>
-      </div>
-
-      <div className="carousel">
-        <button type="button" className="arrow" onClick={() => p.onShift(-1)} aria-label={`Previous ${p.noun}`}>
-          <Tri dir="left" double />
+      }
+      footer={{ label: `+ Add your own ${LABELS[p.cat].toLowerCase()}`, onClick: p.onAdd }}
+    >
+      <div className="cl-carousel">
+        <button type="button" className="cl-arrow" onClick={() => p.onShift(-1)} aria-label={`Previous ${p.noun}`}>
+          <Tri dir="left" double width={24} height={14} />
         </button>
-        <div className="tiles">
+        <div className="cl-tiles">
           {visible.map((it) => {
             const sel = p.isWorn(it);
             return (
-              <div key={it.id} className="tile-wrap">
-              <button
-                type="button"
-                className="tile"
-                aria-pressed={sel}
-                onClick={() => p.onPick(it)}
-                style={{ borderColor: sel ? ACCENT : INK, background: sel ? '#EEEAFB' : '#FFFFFF' }}
-              >
-                <span className="art">
-                  <ClothingArt shape={it.shape} color={it.color} img={it.img} />
-                </span>
-                <span className="name">{it.name}</span>
-                {sel && <span className="badge px">Wearing</span>}
-              </button>
-              {it.img && (
+              <div key={it.id} className="cl-tile-wrap">
                 <button
                   type="button"
-                  className="remove px"
-                  aria-label={`Remove ${it.name} from closet`}
-                  onClick={() => p.onRemove(it)}
+                  className={`cl-tile${sel ? ' on' : ''}`}
+                  aria-pressed={sel}
+                  onClick={() => p.onPick(it)}
                 >
-                  x
+                  <span className="cl-art">
+                    <ClothingArt shape={it.shape} color={it.color} img={it.img} />
+                  </span>
+                  <span className="cl-name">{it.name}</span>
+                  {sel && <span className="cl-badge px">Wearing</span>}
                 </button>
-              )}
+                {it.img && (
+                  <div className="cl-own">
+                    <button type="button" className="cl-own-btn" aria-label={`Edit ${it.name}`} onClick={() => p.onEdit(it)}>
+                      <Icon name="pencil" size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="cl-own-btn px"
+                      aria-label={`Remove ${it.name} from closet`}
+                      onClick={() => p.onRemove(it)}
+                    >
+                      x
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-        <button type="button" className="arrow" onClick={() => p.onShift(1)} aria-label={`Next ${p.noun}`}>
-          <Tri dir="right" double />
+        <button type="button" className="cl-arrow" onClick={() => p.onShift(1)} aria-label={`Next ${p.noun}`}>
+          <Tri dir="right" double width={24} height={14} />
         </button>
       </div>
-
-      <div className="row-foot">
-        <span>
-          {n} {LABELS[p.cat].toLowerCase()} in your closet{p.hint ? ` · ${p.hint}` : ''}
-        </span>
-        <label className="upload px">
-          + Add your own
-          <input type="file" accept="image/*" className="sr" onChange={pickImage(600, p.onAdd)} />
-        </label>
-      </div>
-    </section>
+      <p className="cl-info">
+        {n} {LABELS[p.cat].toLowerCase()} in your closet{p.hint ? ` · ${p.hint}` : ''}
+      </p>
+    </Panel>
   );
 }

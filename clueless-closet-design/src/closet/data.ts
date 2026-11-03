@@ -13,11 +13,14 @@ export const TOPS: Category[] = ['tops', 'sweaters', 'shirts'];
 export const BOTTOMS: Category[] = ['jeans', 'skirts', 'trousers'];
 export const EXTRAS: Category[] = ['jackets', 'bags', 'scarves', 'gloves', 'hats'];
 
-export const ROWS: { key: RowKey; num: string; title: string; cats: Category[]; noun: string }[] = [
-  { key: 'top', num: '01', title: 'Top half', cats: TOPS, noun: 'tops' },
-  { key: 'bottom', num: '02', title: 'Bottom half', cats: BOTTOMS, noun: 'bottoms' },
-  { key: 'acc', num: '03', title: 'Extras', cats: EXTRAS, noun: 'extras' },
+export const ROWS: { key: RowKey; num: string; title: string; sub: string; cats: Category[]; noun: string }[] = [
+  { key: 'top', num: '01', title: 'Top half', sub: 'layer it!', cats: TOPS, noun: 'tops' },
+  { key: 'bottom', num: '02', title: 'Bottom half', sub: 'pick one', cats: BOTTOMS, noun: 'bottoms' },
+  { key: 'acc', num: '03', title: 'Extras', sub: 'accessorize!', cats: EXTRAS, noun: 'extras' },
 ];
+
+/** Which closet row a category belongs to. */
+export const rowOf = (c: Category): RowKey => (TOPS.includes(c) ? 'top' : BOTTOMS.includes(c) ? 'bottom' : 'acc');
 
 export const SHAPE: Record<Category, ShapeName> = {
   tops: 'tee', sweaters: 'knit', shirts: 'knit',
