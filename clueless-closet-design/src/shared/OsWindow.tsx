@@ -28,7 +28,7 @@ const PATTERNS: [WallpaperName, string][] = [
 ];
 
 /** Things a screen can trigger from its own buttons. */
-export type WindowApi = { openImport: () => void; openAbout: () => void };
+export type WindowApi = { openImport: () => void; openAbout: () => void; openWallpaper: () => void };
 
 type Slot2<T> = T | ((api: WindowApi) => T);
 
@@ -138,6 +138,7 @@ export function OsWindow({ app, title, subtitle, variant = 'classic', brand, tag
   const api: WindowApi = {
     openImport: () => backupInput.current?.click(),
     openAbout: () => aboutRef.current?.showModal(),
+    openWallpaper: () => wallInput.current?.click(),
   };
   const render = (x: Slot2<ReactNode>) => (typeof x === 'function' ? x(api) : x);
   const fashion = variant === 'fashion';

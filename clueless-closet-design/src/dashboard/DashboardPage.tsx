@@ -6,6 +6,7 @@ import { ClothingArt, Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
 import { OsWindow } from '../shared/OsWindow';
 import { readStored } from '../shared/storage';
+import { useWallpaper, WallpaperLayer, type Slot } from '../shared/wallpaper';
 import { HANDLE, NAV, type View } from './data';
 import { Icon, type IconName } from './icons';
 import {
@@ -39,6 +40,34 @@ export function DashboardPage() {
   const [newOpen, setNewOpen] = useState(false);
   const lookRef = useRef<HTMLDialogElement>(null);
   const [looks, setLooks] = useState<ReturnType<typeof readLookbook>>([]);
+
+  // Photo background for the leopard area inside the window (leopard print until one is chosen).
+  const inside = useWallpaper('dashboard-inside', false);
+  const insideInputs = {
+    auto: useRef<HTMLInputElement>(null),
+    landscape: useRef<HTMLInputElement>(null),
+    portrait: useRef<HTMLInputElement>(null),
+  };
+  const [toast, setToast] = useState('');
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(''), 6000);
+    return () => clearTimeout(t);
+  }, [toast]);
+  const onInsideFile = (slot?: Slot) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const f = input.files?.[0];
+    input.value = '';
+    if (!f) return;
+    const saved = await inside.upload(f, slot);
+    if (!saved) return;
+    const other = saved === 'landscape' ? inside.wall.portrait : inside.wall.landscape;
+    setToast(
+      saved === 'landscape'
+        ? `Background set for computers${other ? '' : ' (also used on phones until you add a vertical photo)'}`
+        : `Background set for phones${other ? '' : ' (also used on computers until you add a horizontal photo)'}`,
+    );
+  };
 
   const v = s.view;
   const counts: Partial<Record<View, number>> = {
@@ -94,11 +123,20 @@ export function DashboardPage() {
         },
         {
           label: 'View',
-          items: [...NAV, ['activity', 'Activity'] as [View, string]].map(([key, label]) => ({
-            label,
-            checked: v === key,
-            onSelect: () => d.setView(key),
-          })),
+          items: [
+            ...[...NAV, ['activity', 'Activity'] as [View, string]].map(([key, label]) => ({
+              label,
+              checked: v === key,
+              onSelect: () => d.setView(key),
+            })),
+            { separator: true },
+            { label: 'Inside: leopard print', checked: !inside.showingPhoto, onSelect: () => inside.hidePhoto() },
+            { label: 'Inside: my photo', checked: inside.showingPhoto, disabled: !inside.hasPhoto, onSelect: inside.showPhoto },
+            { label: 'Change inside background…', onSelect: () => insideInputs.auto.current?.click() },
+            { label: 'Inside: upload computer photo (horizontal)…', onSelect: () => insideInputs.landscape.current?.click() },
+            { label: 'Inside: upload phone photo (vertical)…', onSelect: () => insideInputs.portrait.current?.click() },
+            { label: 'Inside: remove photos', disabled: !inside.hasPhoto, onSelect: inside.removeAll },
+          ],
         },
         {
           label: 'Repos',
@@ -144,7 +182,27 @@ export function DashboardPage() {
         </>
       )}
     >
+      {(api) => (
+      <>
       <div className="fx-content">
+        {inside.showingPhoto && <WallpaperLayer wall={inside.wall} photo contained />}
+        {(['auto', 'landscape', 'portrait'] as const).map((k) => (
+          <input
+            key={k}
+            ref={insideInputs[k]}
+            type="file"
+            accept="image/*"
+            className="sr"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={onInsideFile(k === 'auto' ? undefined : k)}
+          />
+        ))}
+        {toast && (
+          <div className="fx-toast" role="status">
+            {toast}
+          </div>
+        )}
         <nav aria-label="Dashboard sections" className="fx-side">
           <label className="fx-avatar">
             {s.avatar ? (
@@ -197,6 +255,43 @@ export function DashboardPage() {
             <Hanger size={17} />
             <span className="fx-nav-label">My closet</span>
           </Link>
+
+          <div className="fx-bg-group" role="group" aria-labelledby="bg-title">
+            <span id="bg-title" className="fx-bg-title px">
+              Backgrounds
+            </span>
+            <button
+              type="button"
+              className="fx-nav px"
+              title="Photo for this leopard area. Horizontal photos are used on computers, vertical on phones."
+              onClick={() => insideInputs.auto.current?.click()}
+            >
+              <Icon name="camera" size={16} />
+              <span className="fx-nav-label">Inside photo</span>
+            </button>
+            {inside.showingPhoto ? (
+              <button type="button" className="fx-nav px" onClick={() => inside.hidePhoto()}>
+                <Icon name="sparkle" size={16} />
+                <span className="fx-nav-label">Back to leopard</span>
+              </button>
+            ) : (
+              inside.hasPhoto && (
+                <button type="button" className="fx-nav px" onClick={inside.showPhoto}>
+                  <Icon name="eye" size={16} />
+                  <span className="fx-nav-label">Show my photo</span>
+                </button>
+              )
+            )}
+            <button
+              type="button"
+              className="fx-nav px"
+              title="Wallpaper behind the window. Horizontal photos are used on computers, vertical on phones."
+              onClick={api.openWallpaper}
+            >
+              <Icon name="home" size={16} />
+              <span className="fx-nav-label">Wallpaper behind</span>
+            </button>
+          </div>
         </nav>
 
         <main className="fx-main">
@@ -273,6 +368,8 @@ export function DashboardPage() {
           </div>
         </div>
       </dialog>
+      </>
+      )}
     </OsWindow>
   );
 }

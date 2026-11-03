@@ -25,8 +25,9 @@ function legacy(): Wallpaper {
   return { ...EMPTY, pattern: old.pattern ?? 'plaid', landscape: old.image ?? null, showPhoto: !!old.image };
 }
 
-export function useWallpaper(screen: string) {
-  const [wall, setWall] = usePersistentState<Wallpaper>(`wallpaper-${screen}`, legacy, () =>
+/** `screen` names the storage slot; only the screens' own wallpapers inherit the old shared one. */
+export function useWallpaper(screen: string, inheritLegacy = true) {
+  const [wall, setWall] = usePersistentState<Wallpaper>(`wallpaper-${screen}`, inheritLegacy ? legacy : EMPTY, () =>
     alert('That photo is too big to remember. Try a smaller one, or remove the other wallpaper photo first.'),
   );
 
@@ -52,6 +53,8 @@ export function useWallpaper(screen: string) {
     upload,
     setPattern: (pattern: WallpaperName) => setWall((w) => ({ ...w, pattern, showPhoto: false })),
     showPhoto: () => setWall((w) => ({ ...w, showPhoto: true })),
+    /** Keep the photos but show the pattern (or, inside the dashboard, the leopard print). */
+    hidePhoto: () => setWall((w) => ({ ...w, showPhoto: false })),
     remove: (slot: Slot) =>
       setWall((w) => {
         const next = { ...w, [slot]: null };
@@ -61,13 +64,17 @@ export function useWallpaper(screen: string) {
   };
 }
 
-/** Background behind the window: pattern, or the right photo for the screen's orientation. */
-export function WallpaperLayer({ wall, photo }: { wall: Wallpaper; photo: boolean }) {
-  if (!photo) return <div className="wall" style={{ background: WALLPAPERS[wall.pattern] }} />;
+/**
+ * Background: pattern, or the right photo for the screen's orientation.
+ * `contained` fills its positioned parent instead of the whole viewport.
+ */
+export function WallpaperLayer({ wall, photo, contained }: { wall: Wallpaper; photo: boolean; contained?: boolean }) {
+  const cls = `wall${contained ? ' wall-contained' : ''}`;
+  if (!photo) return <div className={cls} style={{ background: WALLPAPERS[wall.pattern] }} />;
   const land = wall.landscape ?? wall.portrait!;
   const port = wall.portrait ?? wall.landscape!;
   return (
-    <div className="wall" style={{ background: '#1D1A2B' }}>
+    <div className={cls} style={{ background: '#1D1A2B' }}>
       <img src={land} alt="" className="wall-img wall-landscape" />
       {port !== land && <img src={port} alt="" className="wall-img wall-portrait" />}
     </div>

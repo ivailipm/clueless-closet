@@ -75,6 +75,7 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 .desktop { position: relative; min-height: 100vh; padding: 32px 20px 96px; }
 /* Wallpaper stays put behind the window while the page scrolls. */
 .wall { position: fixed; inset: 0; z-index: 0; }
+.wall-contained { position: absolute; z-index: 0; overflow: hidden; }
 .wall-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .wall-portrait { display: none; }
 @media (orientation: portrait) {
@@ -291,9 +292,14 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 }
 
 .fx-content {
-  display: flex; flex-wrap: wrap; gap: 0;
+  position: relative; display: flex; flex-wrap: wrap; gap: 0;
   background: url('./dashboard/leopard.svg') 0 0 / 150px 150px, #D3A065;
   border: 3px solid var(--fx-navy); box-shadow: inset 0 0 0 2px #6A6EF5;
+}
+.fx-side, .fx-main { position: relative; z-index: 1; }
+.fx-bg-group { display: flex; flex-direction: column; gap: 7px; margin-top: 6px; padding-top: 8px; border-top: 2px dashed rgba(23,22,74,.55); }
+.fx-bg-title {
+  align-self: flex-start; font-size: 10px; padding: 3px 8px; color: #FFFFFF; background: var(--fx-navy); border: 1px solid #0B0A2A;
 }
 .fx-side {
   flex: 0 0 236px; max-width: 236px; min-width: 0; padding: 14px 12px; display: flex; flex-direction: column; gap: 7px;
@@ -522,6 +528,8 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
   .fx-avatar { height: 130px; }
   .fx-namecard { align-self: stretch; justify-content: center; }
   .fx-nav-closet { margin-top: 0; }
+  .fx-bg-group { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+  .fx-bg-title { grid-column: 1 / -1; justify-self: start; }
   .fx-main { padding: 8px; }
   .fx-top { grid-template-columns: 1fr; justify-items: center; }
   .fx-top-right { justify-content: center; }
