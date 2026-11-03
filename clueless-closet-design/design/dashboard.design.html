@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code Closet dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&amp;family=Work+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Work Sans',system-ui,sans-serif;color:#1D1A2B}
+a{color:#5B4BC4}a:hover{color:#3A2C94}
+.px{font-family:'Silkscreen',monospace;letter-spacing:.02em}
+.ic path{stroke:#1D1A2B;stroke-width:2.5;stroke-linejoin:round;fill-rule:evenodd}
+.tri path{fill:#1D1A2B}
+.hanger path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.sil circle,.sil path{fill:#FFFFFF;stroke:#1D1A2B;stroke-width:3}
+.sr{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+button{font:inherit;cursor:pointer;color:#1D1A2B}
+button:focus-visible,a:focus-visible,label:focus-within,input:focus-visible{outline:3px solid #2F6FEB;outline-offset:2px}
+.tab{font-family:'Silkscreen',monospace;font-size:13px;padding:8px 12px;min-height:44px;border:3px solid;box-shadow:0 0 0 2px #1D1A2B;margin:2px;box-sizing:border-box}
+.mini{width:40px;height:32px;display:flex;align-items:center;justify-content:center;background:#D4D0E0;border:2px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 1px #1D1A2B}
+.mini:active,.btn:active,.upload:active{border-color:rgba(0,0,0,.45) rgba(255,255,255,.85) rgba(255,255,255,.85) rgba(0,0,0,.45)}
+.btn{font-family:'Silkscreen',monospace;font-size:13px;min-height:44px;padding:0 16px;background:#D4D0E0;border:3px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 2px #1D1A2B;margin:2px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:#1D1A2B}
+.upload{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;font-size:12px;cursor:pointer;background:#D4D0E0;color:#1D1A2B;border:3px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 2px #1D1A2B;margin:2px}
+.wbtn{display:flex;align-items:center;justify-content:center;width:28px;height:26px;background:#D4D0E0;color:#1D1A2B;font-family:'Silkscreen',monospace;font-size:13px;border:2px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 1px #1D1A2B}
+.sunk{display:inline-flex;align-items:center;padding:6px 10px;background:#E4E1EE;color:#1D1A2B;border:2px solid;border-color:#4B4660 #FFFFFF #FFFFFF #4B4660}
+.panel{border:2px solid #1D1A2B;background:#FFFFFF;display:flex;flex-direction:column;min-width:0;box-shadow:3px 3px 0 rgba(29,26,43,.35)}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 6px 10px;background:#5B4BC4;color:#FFFFFF;border-bottom:2px solid #1D1A2B;flex-wrap:wrap}
+.ph h2{margin:0;font-size:14px;font-weight:400}
+.chip{font-size:12px;font-weight:600;padding:3px 8px;background:#EEEAFB;border:1px solid #1D1A2B}
+.cnt{font-family:'Work Sans',sans-serif;font-size:12px;font-weight:700;padding:2px 7px;background:#C2255C;color:#FFFFFF;border:1px solid #1D1A2B}
+.cell{height:30px;border:1px solid #1D1A2B;padding:0;font-size:11px;font-weight:600}
+</style>
+</helmet>
+<div style="position: relative; min-height: 100vh; box-sizing: border-box; padding: 32px 20px 96px; background: {{wall}}">
+<sc-if value="{{hasWallImg}}" hint-placeholder-val="{{ false }}">
+<img src="{{wallImg}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0">
+</sc-if>
+<div style="position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; background: #8E84F0; border: 2px solid #1D1A2B; border-radius: 10px 10px 4px 4px; padding: 0 6px 6px; box-shadow: 6px 6px 0 rgba(29,26,43,.55)">
+
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -6px; padding: 8px 10px; background: linear-gradient(180deg, #9C93F5 0%, #5B4BC4 55%, #4636A8 100%); border-radius: 8px 8px 0 0; color: #FFFFFF; border-bottom: 2px solid #1D1A2B">
+<div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap">
+<svg class="hanger" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M10 5 a2 2 0 1 1 2 2 v2 L3 16 h18 L12 9"></path></svg>
+<h1 class="px" style="margin: 0; font-size: 20px; font-weight: 400; text-shadow: 2px 2px 0 #1D1A2B">Code Closet.exe</h1>
+<span style="font-size: 13px; color: #EEEAFF">where my repos get dressed</span>
+</div>
+<div aria-hidden="true" style="display: flex; gap: 4px; flex: none">
+<span class="wbtn">_</span>
+<span class="wbtn">□</span>
+<span class="wbtn" style="background: #D9534F; color: #FFFFFF">x</span>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 -6px 6px; padding: 6px 10px; background: #D4D0E0; border-bottom: 2px solid #6B6680">
+<div aria-hidden="true" style="display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap">
+<span><u>F</u>ile</span><span><u>E</u>dit</span><span><u>V</u>iew</span><span><u>R</u>epos</span><span><u>H</u>elp</span>
+</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<label class="upload px">Change wallpaper<input type="file" accept="image/*" class="sr" onChange="{{setWall}}"></label>
+<sc-if value="{{hasWallImg}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="btn" onClick="{{resetWall}}" style="font-size: 12px">Reset</button>
+</sc-if>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; background: #F4F2FA; border: 3px solid; border-color: #4B4660 #FFFFFF #FFFFFF #4B4660">
+
+<nav aria-label="Dashboard sections" style="flex: 1 1 230px; min-width: 0; box-sizing: border-box; padding: 16px; background: #E4E0F5; border-right: 3px solid #1D1A2B; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 210px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #F7C6D9; border: 3px solid; border-color: #4B4660 #FFFFFF #FFFFFF #4B4660">
+<sc-if value="{{hasAvatar}}" hint-placeholder-val="{{ false }}"><img src="{{avatar}}" alt="Profile photo" style="width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
+<sc-if value="{{noAvatar}}" hint-placeholder-val="{{ true }}"><svg class="sil" viewBox="0 0 100 100" width="130" height="130" aria-hidden="true"><circle cx="50" cy="38" r="18"></circle><path d="M18 92 Q18 62 50 62 Q82 62 82 92 Z"></path></svg></sc-if>
+</div>
+<label class="upload px">Upload your photo<input type="file" accept="image/*" class="sr" onChange="{{setAvatar}}"></label>
+<div style="background: #FFFFFF; border: 2px solid #1D1A2B; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px">
+<strong class="px" style="font-size: 15px; font-weight: 400">ivailipm</strong>
+<span>Geel, Belgium</span>
+<span>totally coding</span>
+</div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+<button type="button" class="tab" onClick="{{n.go}}" aria-pressed="{{n.pressed}}" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; background: {{n.bg}}; color: {{n.fg}}; border-color: {{n.bevel}}">
+<span>{{n.label}}</span>
+<sc-if value="{{n.hasCount}}" hint-placeholder-val="{{ false }}"><span class="cnt">{{n.count}}</span></sc-if>
+</button>
+</sc-for>
+<a href="Main.dc.html" class="btn" style="justify-content: flex-start"><svg class="hanger" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10 5 a2 2 0 1 1 2 2 v2 L3 16 h18 L12 9"></path></svg>My closet</a>
+</nav>
+
+<main style="flex: 999 1 600px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+
+<sc-if value="{{showRepos}}" hint-placeholder-val="{{ true }}">
+<section class="panel" aria-labelledby="h-repos">
+<div class="ph">
+<h2 id="h-repos" class="px">My repositories (aka my outfits)</h2>
+<div style="display: flex; gap: 4px">
+<button type="button" class="mini" onClick="{{repoFirst}}" aria-label="First repositories"><svg class="tri" viewBox="0 0 28 16" width="20" height="12" aria-hidden="true"><path d="M14 1 L1 8 L14 15 Z M27 1 L14 8 L27 15 Z"></path></svg></button>
+<button type="button" class="mini" onClick="{{repoPrev}}" aria-label="Previous repository"><svg class="tri" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M14 1 L1 8 L14 15 Z"></path></svg></button>
+<button type="button" class="mini" onClick="{{repoNext}}" aria-label="Next repository"><svg class="tri" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2 1 L15 8 L2 15 Z"></path></svg></button>
+<button type="button" class="mini" onClick="{{repoLast}}" aria-label="Last repositories"><svg class="tri" viewBox="0 0 28 16" width="20" height="12" aria-hidden="true"><path d="M1 1 L14 8 L1 15 Z M14 1 L27 8 L14 15 Z"></path></svg></button>
+</div>
+</div>
+<div style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{repos}}" as="r" hint-placeholder-count="4">
+<article style="border: 2px solid #1D1A2B; background: #FFFFFF; display: flex; flex-direction: column; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 2px solid #1D1A2B; background: #EEEAFB">
+<h3 style="margin: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.full}}</h3>
+<span aria-hidden="true" class="px" style="font-size: 11px">···</span>
+</div>
+<div style="height: 110px; padding: 8px; background: #FAF9FD"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{r.d}}" fill="{{r.color}}"></path></svg></div>
+<div style="padding: 8px; display: flex; flex-direction: column; gap: 8px; border-top: 2px solid #1D1A2B">
+<span style="font-size: 13px">{{r.tag}}</span>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap">
+<span class="chip">{{r.lang}}</span>
+<button type="button" class="tab" onClick="{{r.star}}" aria-pressed="{{r.pressed}}" style="font-size: 11px; padding: 4px 10px; background: {{r.sbg}}; color: {{r.sfg}}; border-color: {{r.bevel}}">{{r.starLabel}}</button>
+</div>
+</div>
+</article>
+</sc-for>
+</div>
+<sc-if value="{{newOpen}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 0 12px 12px">
+<label for="newrepo" style="font-size: 13px; font-weight: 600">New repo name</label>
+<input id="newrepo" type="text" value="{{newName}}" onChange="{{setNewName}}" placeholder="e.g. velvet-router" style="flex: 1 1 200px; min-height: 40px; padding: 0 10px; font: inherit; border: 2px solid; border-color: #4B4660 #FFFFFF #FFFFFF #4B4660; background: #FFFFFF">
+<button type="button" class="btn" onClick="{{createRepo}}" style="background: {{accent}}; color: #FFFFFF">Create</button>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<sc-if value="{{showPrs}}" hint-placeholder-val="{{ true }}">
+<section class="panel" aria-labelledby="h-prs" style="flex: 1 1 340px">
+<div class="ph"><h2 id="h-prs" class="px">Pull requests (fashion reviews)</h2></div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{prs}}" as="p" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #C9C5DA">
+<span aria-hidden="true" class="px" style="flex: none; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: #F7C6D9; border: 2px solid #1D1A2B; font-size: 14px">{{p.initial}}</span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 600">{{p.title}}</span>
+<span style="font-size: 12px; color: #55516A">#{{p.num}} · {{p.user}}</span>
+</div>
+<button type="button" class="tab" onClick="{{p.toggle}}" aria-pressed="{{p.pressed}}" style="font-size: 11px; padding: 4px 12px; background: {{p.bg}}; color: #FFFFFF; border-color: {{p.bevel}}">{{p.label}}</button>
+</li>
+</sc-for>
+</ul>
+</section>
+</sc-if>
+
+<sc-if value="{{showCal}}" hint-placeholder-val="{{ true }}">
+<section class="panel" aria-labelledby="h-cal" style="flex: 1 1 300px">
+<div class="ph"><h2 id="h-cal" class="px">Contribution calendar</h2></div>
+<div style="padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<button type="button" class="mini" onClick="{{prevMonth}}" aria-label="Previous month"><svg class="tri" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M14 1 L1 8 L14 15 Z"></path></svg></button>
+<span class="px" style="font-size: 14px">{{monthLabel}}</span>
+<button type="button" class="mini" onClick="{{nextMonth}}" aria-label="Next month"><svg class="tri" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2 1 L15 8 L2 15 Z"></path></svg></button>
+</div>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; font-size: 12px; font-weight: 700">
+<span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="35">
+<sc-if value="{{c.blank}}" hint-placeholder-val="{{ false }}"><span></span></sc-if>
+<sc-if value="{{c.isDay}}" hint-placeholder-val="{{ true }}"><button type="button" class="cell" onClick="{{c.cycle}}" aria-label="{{c.aria}}" style="background: {{c.bg}}; color: {{c.fg}}">{{c.day}}</button></sc-if>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 12px">
+<span>Less</span>
+<span aria-hidden="true" style="width: 14px; height: 14px; background: #EDEAF6; border: 1px solid #1D1A2B"></span>
+<span aria-hidden="true" style="width: 14px; height: 14px; background: #F7C6D9; border: 1px solid #1D1A2B"></span>
+<span aria-hidden="true" style="width: 14px; height: 14px; background: #EF8FB4; border: 1px solid #1D1A2B"></span>
+<span aria-hidden="true" style="width: 14px; height: 14px; background: #D94C86; border: 1px solid #1D1A2B"></span>
+<span aria-hidden="true" style="width: 14px; height: 14px; background: #A3245B; border: 1px solid #1D1A2B"></span>
+<span>More</span>
+</div>
+<span style="font-size: 12px; color: #55516A">Click a day to log how much you coded.</span>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{showHome}}" hint-placeholder-val="{{ true }}">
+<section class="panel" aria-labelledby="h-spot" style="flex: 1 1 200px">
+<div class="ph" style="background: #C2255C"><h2 id="h-spot" class="px">Outfit of the day</h2></div>
+<div style="padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: #FFF0F5; flex: 1">
+<div style="width: 140px; height: 110px"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="M30 14 L44 10 L50 30 L56 10 L70 14 L86 30 L92 82 L80 84 L72 46 L72 90 L54 90 L50 34 L46 90 L28 90 L28 46 L20 84 L8 82 L14 30 Z" fill="#E8C547"></path></svg></div>
+<div style="width: 140px; height: 90px"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="M34 16 L66 16 L84 82 L16 82 Z" fill="#F2C94C"></path></svg></div>
+<span style="font-size: 13px; font-weight: 600">Plaid blazer + plaid mini</span>
+<a href="Main.dc.html" class="btn" style="font-size: 12px">Open in closet</a>
+</div>
+</section>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<sc-if value="{{showActivity}}" hint-placeholder-val="{{ true }}">
+<section class="panel" aria-labelledby="h-act" style="flex: 2 1 380px">
+<div class="ph"><h2 id="h-act" class="px">Activity feed (what's hot)</h2></div>
+<sc-if value="{{hasActivity}}" hint-placeholder-val="{{ false }}">
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{activity}}" as="a" hint-placeholder-count="3">
+<li style="display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #C9C5DA; font-size: 13px">
+<span><strong>ivailipm</strong> {{a.text}}</span>
+<span style="color: #55516A; flex: none">{{a.time}}</span>
+</li>
+</sc-for>
+</ul>
+</sc-if>
+<sc-if value="{{noActivity}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; padding: 14px 12px; font-size: 13px; color: #55516A">Star a repo, merge a review or log a day and it shows up here.</p>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{showHome}}" hint-placeholder-val="{{ true }}">
+<section class="panel" aria-labelledby="h-feat" style="flex: 1 1 260px">
+<div class="ph"><h2 id="h-feat" class="px">Featured collection</h2></div>
+<div style="padding: 14px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px">
+<strong style="font-size: 15px">90s dev diva starter kit</strong>
+<span style="font-size: 13px; color: #55516A">A pixel font, beveled buttons and a plaid wallpaper for your next side project.</span>
+<button type="button" class="tab" onClick="{{install}}" aria-pressed="{{installPressed}}" style="background: {{installBg}}; color: #FFFFFF; border-color: {{installBevel}}">{{installLabel}}</button>
+</div>
+</section>
+</sc-if>
+</div>
+
+</main>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 6px">
+<button type="button" class="btn" onClick="{{openNew}}">+ New repo</button>
+<a href="Main.dc.html" class="btn">Save outfit</a>
+<span class="sunk" style="flex: 1 1 140px; font-size: 12px">{{repoCount}} repos</span>
+<span class="sunk" style="flex: 1 1 140px; font-size: 12px">{{starCount}} starred</span>
+<span class="sunk" style="flex: 1 1 140px; font-size: 12px">{{openCount}} open reviews</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; background: #D4D0E0; border-top: 3px solid #FFFFFF; box-shadow: 0 -2px 0 #1D1A2B">
+<div style="display: flex; align-items: center; gap: 8px">
+<a href="Main.dc.html" class="btn" style="min-height: 40px">My Closet.exe</a>
+<span class="px" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; min-width: 160px; background: #C4C0D4; border: 3px solid; border-color: #4B4660 #FFFFFF #FFFFFF #4B4660; font-size: 12px">Code Closet.exe</span>
+</div>
+<span class="sunk px" style="font-size: 13px">{{clock}}</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5B4BC4","options":["#5B4BC4","#C2255C","#2F4BD8","#1F7A4D"]},"wallpaper":{"editor":"enum","options":["plaid","dots","plain"],"default":"plaid"},"$preview":{"width":1280,"height":1300}}'>
+var INK = '#1D1A2B';
+var UP = 'rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85)';
+var DOWN = 'rgba(0,0,0,.45) rgba(255,255,255,.85) rgba(255,255,255,.85) rgba(0,0,0,.45)';
+var HANDLE = 'ivailipm';
+var D = {
+  tee: 'M30 16 L42 10 Q50 18 58 10 L70 16 L88 32 L78 44 L70 38 L70 90 L30 90 L30 38 L22 44 L12 32 Z',
+  knit: 'M30 14 L42 10 Q50 17 58 10 L70 14 L86 30 L92 82 L80 84 L72 46 L72 90 L28 90 L28 46 L20 84 L8 82 L14 30 Z',
+  jacket: 'M30 14 L44 10 L50 30 L56 10 L70 14 L86 30 L92 82 L80 84 L72 46 L72 90 L54 90 L50 34 L46 90 L28 90 L28 46 L20 84 L8 82 L14 30 Z',
+  pants: 'M28 10 L72 10 L77 92 L56 92 L50 38 L44 92 L23 92 Z',
+  skirt: 'M34 16 L66 16 L84 82 L16 82 Z',
+  bag: 'M18 40 L82 40 L86 88 L14 88 Z M34 40 Q34 14 50 14 Q66 14 66 40 L60 40 Q60 21 50 21 Q40 21 40 40 Z',
+  hat: 'M14 70 L86 70 L86 80 L14 80 Z M30 70 Q30 30 50 30 Q70 30 70 70 Z'
+};
+var SHAPES = ['jacket', 'tee', 'bag', 'skirt', 'knit', 'hat', 'pants'];
+var COLORS = ['#E8C547', '#E86A92', '#C9A37A', '#6F8FBF', '#F4A9C0', '#A9BFA0', '#9DB8D9'];
+var REPOS = [
+  { name: 'closet-core', tag: 'The classic.', lang: 'PHP', shape: 'jacket', color: '#E8C547' },
+  { name: 'pretty-utils', tag: 'Pretty. Useful.', lang: 'JavaScript', shape: 'tee', color: '#E86A92' },
+  { name: 'mall-style-ui', tag: 'UI components', lang: 'TypeScript', shape: 'bag', color: '#C9A37A' },
+  { name: 'plaid-api', tag: 'A REST API, as if!', lang: 'C#', shape: 'skirt', color: '#6F8FBF' },
+  { name: 'sweater-weather', tag: 'Cosy weather widget', lang: 'Python', shape: 'knit', color: '#F4A9C0' },
+  { name: 'accessory-hooks', tag: 'Hooks for every look', lang: 'React', shape: 'hat', color: '#A9BFA0' }
+];
+var PRS = [
+  { num: 128, user: 'glam-user', title: 'feat: add sparkle to buttons' },
+  { num: 127, user: 'totally-buggin', title: 'fix: plaid misaligned on mobile' },
+  { num: 126, user: 'mall-rat', title: 'docs: update README' }
+];
+var LEVELS = ['#EDEAF6', '#F7C6D9', '#EF8FB4', '#D94C86', '#A3245B'];
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var WALL = {
+  plaid: 'repeating-linear-gradient(0deg, rgba(194,37,92,.13) 0 14px, transparent 14px 44px), repeating-linear-gradient(90deg, rgba(194,37,92,.13) 0 14px, transparent 14px 44px), repeating-linear-gradient(0deg, rgba(29,26,43,.07) 0 2px, transparent 2px 22px), repeating-linear-gradient(90deg, rgba(29,26,43,.07) 0 2px, transparent 2px 22px), #FFF1B8',
+  dots: 'radial-gradient(#EF9DBA 3px, transparent 3.5px) 0 0 / 24px 24px, #FFF4C7',
+  plain: '#FFF4C7'
+};
+function now() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = {
+      view: 'home', avatar: null, wallImg: null, off: 0,
+      repos: REPOS.map(function (r) { return Object.assign({ id: r.name }, r); }),
+      starred: {}, prs: PRS.map(function (p) { return Object.assign({ merged: false }, p); }),
+      cal: {}, monthOff: 0, activity: [], installed: false, newOpen: false, newName: ''
+    };
+  }
+  componentDidMount() { var self = this; this._t = setInterval(function () { self.forceUpdate(); }, 30000); }
+  componentWillUnmount() { clearInterval(this._t); }
+  log(s, text) { return [{ id: String(Date.now()) + Math.random(), text: text, time: now() }].concat(s.activity).slice(0, 8); }
+  file(e, key) {
+    var input = e.target; var f = input.files && input.files[0];
+    if (!f) return;
+    var o = {}; o[key] = URL.createObjectURL(f);
+    this.setState(o); input.value = '';
+  }
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var accent = this.props.accent ?? '#5B4BC4';
+    var wp = this.props.wallpaper ?? 'plaid';
+    var v = s.view;
+    var openCount = s.prs.filter(function (p) { return !p.merged; }).length;
+    var starCount = Object.keys(s.starred).filter(function (k) { return s.starred[k]; }).length;
+
+    var NAV = [['home', 'Home'], ['repos', 'Repositories'], ['prs', 'Pull requests'], ['cal', 'Calendar'], ['activity', 'Activity']];
+    var nav = NAV.map(function (n) {
+      var on = v === n[0];
+      return {
+        label: n[1], pressed: on ? 'true' : 'false', bg: on ? accent : '#D4D0E0', fg: on ? '#FFFFFF' : INK, bevel: on ? DOWN : UP,
+        hasCount: n[0] === 'prs' && openCount > 0, count: openCount,
+        go: function () { self.setState({ view: n[0] }); }
+      };
+    });
+
+    var n = s.repos.length;
+    var per = Math.min(4, n);
+    var off = ((s.off % n) + n) % n;
+    var repos = [];
+    for (var i = 0; i < per; i++) {
+      (function (r) {
+        var on = !!s.starred[r.id];
+        repos.push(Object.assign({}, r, {
+          full: HANDLE + '/' + r.name, d: D[r.shape],
+          starLabel: on ? 'Starred' : 'Star', pressed: on ? 'true' : 'false',
+          sbg: on ? accent : '#D4D0E0', sfg: on ? '#FFFFFF' : INK, bevel: on ? DOWN : UP,
+          star: function () {
+            self.setState(function (st) {
+              var starred = Object.assign({}, st.starred); starred[r.id] = !st.starred[r.id];
+              return { starred: starred, activity: starred[r.id] ? self.log(st, 'starred ' + HANDLE + '/' + r.name) : st.activity };
+            });
+          }
+        }));
+      })(s.repos[(off + i) % n]);
+    }
+
+    var prs = s.prs.map(function (p, idx) {
+      return {
+        num: p.num, user: p.user, title: p.title, initial: p.user.charAt(0).toUpperCase(),
+        label: p.merged ? 'Merged' : 'Open', pressed: p.merged ? 'true' : 'false',
+        bg: p.merged ? accent : '#C2255C', bevel: p.merged ? DOWN : UP,
+        toggle: function () {
+          self.setState(function (st) {
+            var list = st.prs.slice(); list[idx] = Object.assign({}, list[idx], { merged: !list[idx].merged });
+            return { prs: list, activity: list[idx].merged ? self.log(st, 'merged #' + p.num + ' ' + p.title) : st.activity };
+          });
+        }
+      };
+    });
+
+    var today = new Date();
+    var first = new Date(today.getFullYear(), today.getMonth() + s.monthOff, 1);
+    var y = first.getFullYear(), m = first.getMonth();
+    var days = new Date(y, m + 1, 0).getDate();
+    var cells = [];
+    for (var b = 0; b < first.getDay(); b++) cells.push({ blank: true, isDay: false });
+    for (var dd = 1; dd <= days; dd++) {
+      (function (day) {
+        var key = y + '-' + m + '-' + day;
+        var lv = s.cal[key] || 0;
+        cells.push({
+          blank: false, isDay: true, day: day, bg: LEVELS[lv], fg: lv >= 3 ? '#FFFFFF' : INK,
+          aria: MONTHS[m] + ' ' + day + ', level ' + lv + ' of 4',
+          cycle: function () {
+            self.setState(function (st) {
+              var cal = Object.assign({}, st.cal); var next = ((st.cal[key] || 0) + 1) % 5; cal[key] = next;
+              return { cal: cal, activity: next === 1 ? self.log(st, 'logged code on ' + MONTHS[m].slice(0, 3) + ' ' + day) : st.activity };
+            });
+          }
+        });
+      })(dd);
+    }
+
+    return {
+      accent: accent,
+      wall: s.wallImg ? INK : (WALL[wp] || WALL.plaid),
+      wallImg: s.wallImg, hasWallImg: !!s.wallImg,
+      setWall: function (e) { self.file(e, 'wallImg'); },
+      resetWall: function () { self.setState({ wallImg: null }); },
+      avatar: s.avatar, hasAvatar: !!s.avatar, noAvatar: !s.avatar,
+      setAvatar: function (e) { self.file(e, 'avatar'); },
+      clock: now(),
+      nav: nav,
+      showHome: v === 'home',
+      showRepos: v === 'home' || v === 'repos',
+      showPrs: v === 'home' || v === 'prs',
+      showCal: v === 'home' || v === 'cal',
+      showActivity: v === 'home' || v === 'activity',
+      repos: repos,
+      repoFirst: function () { self.setState({ off: 0 }); },
+      repoPrev: function () { self.setState(function (st) { return { off: st.off - 1 }; }); },
+      repoNext: function () { self.setState(function (st) { return { off: st.off + 1 }; }); },
+      repoLast: function () { self.setState(function (st) { return { off: Math.max(0, st.repos.length - 4) }; }); },
+      newOpen: s.newOpen, newName: s.newName,
+      openNew: function () { self.setState({ newOpen: true, view: v === 'home' || v === 'repos' ? v : 'repos' }); },
+      setNewName: function (e) { self.setState({ newName: e.target.value }); },
+      createRepo: function () {
+        self.setState(function (st) {
+          var name = st.newName.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+          if (!name) return null;
+          var k = st.repos.length % SHAPES.length;
+          var list = st.repos.concat([{ id: name + Date.now(), name: name, tag: 'Fresh off the rack.', lang: 'New', shape: SHAPES[k], color: COLORS[k] }]);
+          return { repos: list, off: Math.max(0, list.length - 4), newName: '', newOpen: false, activity: self.log(st, 'created ' + HANDLE + '/' + name) };
+        });
+      },
+      prs: prs,
+      monthLabel: MONTHS[m] + ' ' + y,
+      prevMonth: function () { self.setState(function (st) { return { monthOff: st.monthOff - 1 }; }); },
+      nextMonth: function () { self.setState(function (st) { return { monthOff: st.monthOff + 1 }; }); },
+      cells: cells,
+      activity: s.activity, hasActivity: s.activity.length > 0, noActivity: s.activity.length === 0,
+      installLabel: s.installed ? 'Installed' : 'Install look', installPressed: s.installed ? 'true' : 'false',
+      installBg: s.installed ? accent : '#C2255C', installBevel: s.installed ? DOWN : UP,
+      install: function () {
+        self.setState(function (st) {
+          return { installed: !st.installed, activity: !st.installed ? self.log(st, 'installed 90s dev diva starter kit') : st.activity };
+        });
+      },
+      repoCount: n, starCount: starCount, openCount: openCount
+    };
+  }
+}
+</script>
+</body>
+</html>

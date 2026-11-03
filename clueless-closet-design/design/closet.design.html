@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My Closet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&amp;family=Work+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Work Sans',system-ui,sans-serif;color:#1D1A2B}
+a{color:#C2255C}a:hover{color:#8E1A43}
+.px{font-family:'Silkscreen',monospace;letter-spacing:.02em}
+.ic path{stroke:#1D1A2B;stroke-width:2.5;stroke-linejoin:round;fill-rule:evenodd}
+.chev path{fill:none;stroke:currentColor;stroke-width:3}
+.sr{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+button{font:inherit;cursor:pointer;color:#1D1A2B}
+button:focus-visible,label:focus-within{outline:3px solid #2F6FEB;outline-offset:2px}
+.tab{font-family:'Silkscreen',monospace;font-size:13px;padding:8px 14px;min-height:44px;border:3px solid;box-shadow:0 0 0 2px #1D1A2B;margin:2px}
+.arrow{width:64px;height:48px;flex:none;display:flex;align-items:center;justify-content:center;background:#D4D0E0;border:3px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 2px #1D1A2B}
+.arrow:active,.btn:active,.upload:active{border-color:rgba(0,0,0,.45) rgba(255,255,255,.85) rgba(255,255,255,.85) rgba(0,0,0,.45)}
+.tri path{fill:#1D1A2B}
+.hanger path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.wbtn{display:flex;align-items:center;justify-content:center;width:28px;height:26px;background:#D4D0E0;color:#1D1A2B;font-family:'Silkscreen',monospace;font-size:13px;border:2px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 1px #1D1A2B}
+.sunk{display:inline-flex;align-items:center;padding:6px 10px;background:#E4E1EE;color:#1D1A2B;border:2px solid;border-color:#4B4660 #FFFFFF #FFFFFF #4B4660}
+.tile{position:relative;display:flex;flex-direction:column;gap:8px;padding:12px;border-width:3px;border-style:solid;text-align:left;min-width:0}
+.art{display:block;height:140px}
+.name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{position:absolute;top:8px;right:8px;font-size:11px;padding:4px 6px;color:#fff}
+.upload{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;font-size:12px;cursor:pointer;background:#D4D0E0;color:#1D1A2B;border:3px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 2px #1D1A2B;margin:2px}
+.btn{font-family:'Silkscreen',monospace;font-size:15px;min-height:52px;padding:0 20px;background:#D4D0E0;border:3px solid;border-color:rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85);box-shadow:0 0 0 2px #1D1A2B;margin:2px}
+.empty{display:flex;align-items:center;justify-content:center;border:2px dashed #8B8798;color:#55516A;font-size:13px}
+</style>
+</helmet>
+<div style="position: relative; min-height: 100vh; box-sizing: border-box; padding: 32px 20px 96px; background: {{wall}}">
+<sc-if value="{{hasWallImg}}" hint-placeholder-val="{{ false }}">
+<img src="{{wallImg}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0">
+</sc-if>
+<div style="position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; background: #8E84F0; border: 2px solid #1D1A2B; border-radius: 10px 10px 4px 4px; padding: 0 6px 6px; box-shadow: 6px 6px 0 rgba(29,26,43,.55)">
+
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -6px; padding: 8px 10px; background: linear-gradient(180deg, #9C93F5 0%, #5B4BC4 55%, #4636A8 100%); border-radius: 8px 8px 0 0; color: #FFFFFF; border-bottom: 2px solid #1D1A2B">
+<div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap">
+<svg class="hanger" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M10 5 a2 2 0 1 1 2 2 v2 L3 16 h18 L12 9"></path></svg>
+<h1 class="px" style="margin: 0; font-size: 20px; font-weight: 400; text-shadow: 2px 2px 0 #1D1A2B">My Closet.exe</h1>
+<span style="font-size: 13px; color: #EEEAFF">pick · match · save</span>
+</div>
+<div aria-hidden="true" style="display: flex; gap: 4px; flex: none">
+<span class="wbtn">_</span>
+<span class="wbtn">□</span>
+<span class="wbtn" style="background: #D9534F; color: #FFFFFF">x</span>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 -6px 6px; padding: 6px 10px; background: #D4D0E0; border-bottom: 2px solid #6B6680">
+<div aria-hidden="true" style="display: flex; gap: 18px; font-size: 14px; flex-wrap: wrap">
+<span><u>F</u>ile</span><span><u>E</u>dit</span><span><u>V</u>iew</span><span><u>C</u>loset</span><span><u>H</u>elp</span>
+</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap">
+<label class="upload px">Change wallpaper<input type="file" accept="image/*" class="sr" onChange="{{setWall}}"></label>
+<sc-if value="{{hasWallImg}}" hint-placeholder-val="{{ false }}">
+<button type="button" class="btn" onClick="{{resetWall}}" style="min-height: 44px; font-size: 12px">Reset</button>
+</sc-if>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; background: #FFFFFF; border: 3px solid; border-color: #4B4660 #FFFFFF #FFFFFF #4B4660">
+
+<main style="flex: 999 1 560px; min-width: 0; padding: 24px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box">
+
+<section aria-labelledby="h-top" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<h2 id="h-top" class="px" style="margin: 0; font-size: 16px; font-weight: 400; padding: 6px 12px; background: #5B4BC4; color: #FFFFFF; border: 2px solid #1D1A2B">01 Top half</h2>
+<div role="group" aria-label="Top categories" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{top.tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" class="tab" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" style="background: {{t.bg}}; color: {{t.fg}}; border-color: {{t.bevel}}">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" class="arrow" onClick="{{top.prev}}" aria-label="Previous tops"><svg class="tri" viewBox="0 0 28 16" width="28" height="16" aria-hidden="true"><path d="M14 1 L1 8 L14 15 Z M27 1 L14 8 L27 15 Z"></path></svg></button>
+<div style="flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{top.items}}" as="item" hint-placeholder-count="3">
+<button type="button" class="tile" onClick="{{item.pick}}" aria-pressed="{{item.pressed}}" style="border-color: {{item.border}}; background: {{item.bg}}">
+<span class="art">
+<sc-if value="{{item.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{item.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{item.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{item.d}}" fill="{{item.color}}"></path></svg></sc-if>
+</span>
+<span class="name">{{item.name}}</span>
+<sc-if value="{{item.sel}}" hint-placeholder-val="{{ false }}"><span class="badge px" style="background: {{accent}}">Wearing</span></sc-if>
+</button>
+</sc-for>
+</div>
+<button type="button" class="arrow" onClick="{{top.next}}" aria-label="Next tops"><svg class="tri" viewBox="0 0 28 16" width="28" height="16" aria-hidden="true"><path d="M1 1 L14 8 L1 15 Z M14 1 L27 8 L14 15 Z"></path></svg></button>
+</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: #55516A; padding: 0 60px">
+<span>{{top.pos}}</span>
+<label class="upload px">+ Add your own<input type="file" accept="image/*" class="sr" onChange="{{top.add}}"></label>
+</div>
+</section>
+
+<section aria-labelledby="h-bottom" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<h2 id="h-bottom" class="px" style="margin: 0; font-size: 16px; font-weight: 400; padding: 6px 12px; background: #5B4BC4; color: #FFFFFF; border: 2px solid #1D1A2B">02 Bottom half</h2>
+<div role="group" aria-label="Bottom categories" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{bottom.tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" class="tab" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" style="background: {{t.bg}}; color: {{t.fg}}; border-color: {{t.bevel}}">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" class="arrow" onClick="{{bottom.prev}}" aria-label="Previous bottoms"><svg class="tri" viewBox="0 0 28 16" width="28" height="16" aria-hidden="true"><path d="M14 1 L1 8 L14 15 Z M27 1 L14 8 L27 15 Z"></path></svg></button>
+<div style="flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{bottom.items}}" as="item" hint-placeholder-count="3">
+<button type="button" class="tile" onClick="{{item.pick}}" aria-pressed="{{item.pressed}}" style="border-color: {{item.border}}; background: {{item.bg}}">
+<span class="art">
+<sc-if value="{{item.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{item.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{item.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{item.d}}" fill="{{item.color}}"></path></svg></sc-if>
+</span>
+<span class="name">{{item.name}}</span>
+<sc-if value="{{item.sel}}" hint-placeholder-val="{{ false }}"><span class="badge px" style="background: {{accent}}">Wearing</span></sc-if>
+</button>
+</sc-for>
+</div>
+<button type="button" class="arrow" onClick="{{bottom.next}}" aria-label="Next bottoms"><svg class="tri" viewBox="0 0 28 16" width="28" height="16" aria-hidden="true"><path d="M1 1 L14 8 L1 15 Z M14 1 L27 8 L14 15 Z"></path></svg></button>
+</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: #55516A; padding: 0 60px">
+<span>{{bottom.pos}}</span>
+<label class="upload px">+ Add your own<input type="file" accept="image/*" class="sr" onChange="{{bottom.add}}"></label>
+</div>
+</section>
+
+<section aria-labelledby="h-acc" style="display: flex; flex-direction: column; gap: 12px; border-top: 3px dashed #1D1A2B; padding-top: 24px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<h2 id="h-acc" class="px" style="margin: 0; font-size: 16px; font-weight: 400; padding: 6px 12px; background: #5B4BC4; color: #FFFFFF; border: 2px solid #1D1A2B">03 Extras</h2>
+<div role="group" aria-label="Extra categories" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{acc.tabs}}" as="t" hint-placeholder-count="5">
+<button type="button" class="tab" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" style="background: {{t.bg}}; color: {{t.fg}}; border-color: {{t.bevel}}">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button type="button" class="arrow" onClick="{{acc.prev}}" aria-label="Previous extras"><svg class="tri" viewBox="0 0 28 16" width="28" height="16" aria-hidden="true"><path d="M14 1 L1 8 L14 15 Z M27 1 L14 8 L27 15 Z"></path></svg></button>
+<div style="flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{acc.items}}" as="item" hint-placeholder-count="3">
+<button type="button" class="tile" onClick="{{item.pick}}" aria-pressed="{{item.pressed}}" style="border-color: {{item.border}}; background: {{item.bg}}">
+<span class="art">
+<sc-if value="{{item.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{item.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{item.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{item.d}}" fill="{{item.color}}"></path></svg></sc-if>
+</span>
+<span class="name">{{item.name}}</span>
+<sc-if value="{{item.sel}}" hint-placeholder-val="{{ false }}"><span class="badge px" style="background: {{accent}}">Wearing</span></sc-if>
+</button>
+</sc-for>
+</div>
+<button type="button" class="arrow" onClick="{{acc.next}}" aria-label="Next extras"><svg class="tri" viewBox="0 0 28 16" width="28" height="16" aria-hidden="true"><path d="M1 1 L14 8 L1 15 Z M14 1 L27 8 L14 15 Z"></path></svg></button>
+</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: #55516A; padding: 0 60px">
+<span>{{acc.pos}} · tap again to take it off</span>
+<label class="upload px">+ Add your own<input type="file" accept="image/*" class="sr" onChange="{{acc.add}}"></label>
+</div>
+</section>
+
+</main>
+
+<aside aria-labelledby="h-out" style="flex: 1 1 320px; min-width: 0; box-sizing: border-box; border-left: 3px solid #1D1A2B; background: #FFF0F5; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+<h2 id="h-out" class="px" style="margin: 0; font-size: 16px; font-weight: 400; padding: 6px 12px; background: #5B4BC4; color: #FFFFFF; border: 2px solid #1D1A2B">Today's outfit</h2>
+
+<div style="background: #FFFFFF; border: 3px solid #1D1A2B; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px">
+<sc-if value="{{out.hasTop}}" hint-placeholder-val="{{ true }}">
+<div style="width: 180px; height: 150px">
+<sc-if value="{{out.top.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{out.top.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{out.top.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{out.top.d}}" fill="{{out.top.color}}"></path></svg></sc-if>
+</div>
+<span style="font-size: 13px; font-weight: 600">{{out.top.name}}</span>
+</sc-if>
+<sc-if value="{{out.noTop}}" hint-placeholder-val="{{ false }}">
+<div class="empty" style="width: 180px; height: 150px">Pick a top</div>
+</sc-if>
+<sc-if value="{{out.hasBottom}}" hint-placeholder-val="{{ true }}">
+<div style="width: 180px; height: 170px">
+<sc-if value="{{out.bottom.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{out.bottom.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{out.bottom.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{out.bottom.d}}" fill="{{out.bottom.color}}"></path></svg></sc-if>
+</div>
+<span style="font-size: 13px; font-weight: 600">{{out.bottom.name}}</span>
+</sc-if>
+<sc-if value="{{out.noBottom}}" hint-placeholder-val="{{ false }}">
+<div class="empty" style="width: 180px; height: 170px">Pick a bottom</div>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<h3 class="px" style="margin: 0; font-size: 14px; font-weight: 400">Extras</h3>
+<sc-if value="{{out.hasExtras}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{out.extras}}" as="x" hint-placeholder-count="2">
+<button type="button" onClick="{{x.remove}}" aria-label="Take off {{x.name}}" style="position: relative; display: flex; flex-direction: column; gap: 4px; padding: 8px; background: #FFFFFF; border: 2px solid #1D1A2B; text-align: left; min-width: 0">
+<span style="display: block; height: 64px">
+<sc-if value="{{x.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{x.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{x.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{x.d}}" fill="{{x.color}}"></path></svg></sc-if>
+</span>
+<span style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{x.name}}</span>
+<span aria-hidden="true" class="px" style="position: absolute; top: 4px; right: 6px; font-size: 12px">x</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{out.noExtras}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 13px; color: #55516A">Tap a jacket, bag, scarf, gloves or hat to add it.</p>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<button type="button" class="btn" onClick="{{shuffle}}">Shuffle</button>
+<button type="button" class="btn" onClick="{{save}}" style="background: {{accent}}; color: #FFFFFF">Save outfit</button>
+<button type="button" class="btn" onClick="{{clear}}">Clear</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; border-top: 2px dashed #1D1A2B; padding-top: 16px">
+<h3 class="px" style="margin: 0; font-size: 14px; font-weight: 400">Saved looks ({{savedCount}})</h3>
+<sc-if value="{{hasSaved}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{saved}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.wear}}" aria-label="Wear saved look {{s.n}}" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px; background: #FFFFFF; border: 2px solid #1D1A2B; min-width: 0">
+<span style="display: block; width: 100%; height: 44px">
+<sc-if value="{{s.hasTop}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{s.top.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{s.top.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{s.top.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{s.top.d}}" fill="{{s.top.color}}"></path></svg></sc-if>
+</sc-if>
+</span>
+<span style="display: block; width: 100%; height: 48px">
+<sc-if value="{{s.hasBottom}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{s.bottom.hasImg}}" hint-placeholder-val="{{ false }}"><img src="{{s.bottom.img}}" alt="" style="width: 100%; height: 100%; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{s.bottom.noImg}}" hint-placeholder-val="{{ true }}"><svg class="ic" viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><path d="{{s.bottom.d}}" fill="{{s.bottom.color}}"></path></svg></sc-if>
+</sc-if>
+</span>
+<span style="font-size: 11px; color: #55516A">{{s.label}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noSaved}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; font-size: 13px; color: #55516A">Hit Save outfit and your looks show up here. Tap one to wear it again.</p>
+</sc-if>
+</div>
+</aside>
+
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; font-size: 12px">
+<span class="sunk" style="flex: 1 1 180px">{{status.items}} items in closet</span>
+<span class="sunk" style="flex: 1 1 180px">Wearing {{status.wearing}} pieces</span>
+<span class="sunk" style="flex: 1 1 180px">{{savedCount}} saved looks</span>
+</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; background: #D4D0E0; border-top: 3px solid #FFFFFF; box-shadow: 0 -2px 0 #1D1A2B">
+<div aria-hidden="true" style="display: flex; align-items: center; gap: 8px">
+<span class="px" style="display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; background: #5B4BC4; color: #FFFFFF; border: 3px solid; border-color: rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85); box-shadow: 0 0 0 2px #1D1A2B; font-size: 14px"><svg class="hanger" viewBox="0 0 24 24" width="18" height="18"><path d="M10 5 a2 2 0 1 1 2 2 v2 L3 16 h18 L12 9"></path></svg>Closet</span>
+<span class="px" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; min-width: 160px; background: #C4C0D4; border: 3px solid; border-color: #4B4660 #FFFFFF #FFFFFF #4B4660; font-size: 12px">My Closet.exe</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px">
+<a href="Dashboard.dc.html" class="px" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; background: #D4D0E0; color: #1D1A2B; text-decoration: none; font-size: 12px; border: 3px solid; border-color: rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85); box-shadow: 0 0 0 2px #1D1A2B">Code Closet.exe</a>
+<span class="sunk px" style="font-size: 13px">{{clock}}</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5B4BC4","options":["#5B4BC4","#C2255C","#2F4BD8","#1F7A4D"]},"wallpaper":{"editor":"enum","options":["plaid","dots","plain"],"default":"plaid"},"$preview":{"width":1280,"height":1320}}'>
+var INK = '#1D1A2B';
+var D = {
+  tee: 'M30 16 L42 10 Q50 18 58 10 L70 16 L88 32 L78 44 L70 38 L70 90 L30 90 L30 38 L22 44 L12 32 Z',
+  knit: 'M30 14 L42 10 Q50 17 58 10 L70 14 L86 30 L92 82 L80 84 L72 46 L72 90 L28 90 L28 46 L20 84 L8 82 L14 30 Z',
+  jacket: 'M30 14 L44 10 L50 30 L56 10 L70 14 L86 30 L92 82 L80 84 L72 46 L72 90 L54 90 L50 34 L46 90 L28 90 L28 46 L20 84 L8 82 L14 30 Z',
+  pants: 'M28 10 L72 10 L77 92 L56 92 L50 38 L44 92 L23 92 Z',
+  skirt: 'M34 16 L66 16 L84 82 L16 82 Z',
+  bag: 'M18 40 L82 40 L86 88 L14 88 Z M34 40 Q34 14 50 14 Q66 14 66 40 L60 40 Q60 21 50 21 Q40 21 40 40 Z',
+  scarf: 'M20 18 L80 18 L80 34 L62 34 L62 90 L48 90 L48 34 L20 34 Z',
+  glove: 'M36 90 L36 40 Q36 22 50 22 Q66 22 66 40 L66 52 L74 44 Q84 42 80 54 L66 72 L66 90 Z',
+  hat: 'M14 70 L86 70 L86 80 L14 80 Z M30 70 Q30 30 50 30 Q70 30 70 70 Z'
+};
+var SHAPE = { tops: 'tee', sweaters: 'knit', shirts: 'knit', jeans: 'pants', skirts: 'skirt', trousers: 'pants', jackets: 'jacket', bags: 'bag', scarves: 'scarf', gloves: 'glove', hats: 'hat' };
+var LABELS = { tops: 'Tops', sweaters: 'Sweaters', shirts: 'Shirts', jeans: 'Jeans', skirts: 'Skirts', trousers: 'Trousers', jackets: 'Jackets', bags: 'Bags', scarves: 'Scarves', gloves: 'Gloves', hats: 'Hats' };
+var RAW = {
+  tops: [['White baby tee', '#F6F3EE'], ['Cherry crop top', '#D94155'], ['Lilac tee', '#C9B6E4'], ['Butter tank', '#F7DC6F'], ['Black fitted tee', '#2B2B33'], ['Mint tee', '#A8E0C8']],
+  sweaters: [['Cream cable knit', '#EFE6D2'], ['Pink mohair', '#F4A9C0'], ['Navy v-neck', '#2E3A6B'], ['Sage cardigan', '#A9BFA0'], ['Oatmeal turtleneck', '#D9C7A7']],
+  shirts: [['Oxford blue shirt', '#A9C3E8'], ['White button-up', '#FAFAFA'], ['Red gingham shirt', '#E57373'], ['Striped shirt', '#DCE6F2']],
+  jeans: [['Light wash jeans', '#9DB8D9'], ['Dark rinse jeans', '#3A4F7A'], ['Black skinny jeans', '#2B2B33'], ['White denim', '#F3F1EC'], ['Mom jeans', '#7C9CC4']],
+  skirts: [['Yellow plaid mini', '#F2C94C'], ['Black pleated skirt', '#2B2B33'], ['Pink satin skirt', '#F2B5C8'], ['Denim mini', '#6F8FBF'], ['Red plaid skirt', '#B83A4B']],
+  trousers: [['Camel trousers', '#C19A6B'], ['Grey wide-leg', '#9A9AA3'], ['Black tailored', '#2B2B33'], ['Cream linen', '#EDE4D3']],
+  jackets: [['Denim jacket', '#6F8FBF'], ['Yellow plaid blazer', '#E8C547'], ['Leather biker', '#2B2B33'], ['Pink faux fur', '#F6B8CC']],
+  bags: [['Black mini bag', '#2B2B33'], ['Pink baguette', '#E86A92'], ['Tan tote', '#C9A37A'], ['White micro bag', '#F6F3EE']],
+  scarves: [['Red knit scarf', '#C0392B'], ['Cream wool scarf', '#EFE6D2'], ['Plaid scarf', '#D4A84B']],
+  gloves: [['Black leather gloves', '#2B2B33'], ['Pink knit mittens', '#F4A9C0'], ['Cream mittens', '#EFE6D2']],
+  hats: [['Pink bucket hat', '#F2B5C8'], ['Black beanie', '#2B2B33'], ['Cream beret', '#EFE6D2']]
+};
+var DATA = {};
+Object.keys(RAW).forEach(function (c) {
+  DATA[c] = RAW[c].map(function (r, i) { return { id: c + i, cat: c, name: r[0], color: r[1], shape: SHAPE[c] }; });
+});
+var TOPS = ['tops', 'sweaters', 'shirts'];
+var BOTTOMS = ['jeans', 'skirts', 'trousers'];
+var ACC = ['jackets', 'bags', 'scarves', 'gloves', 'hats'];
+var WALL = {
+  plaid: 'repeating-linear-gradient(0deg, rgba(194,37,92,.13) 0 14px, transparent 14px 44px), repeating-linear-gradient(90deg, rgba(194,37,92,.13) 0 14px, transparent 14px 44px), repeating-linear-gradient(0deg, rgba(29,26,43,.07) 0 2px, transparent 2px 22px), repeating-linear-gradient(90deg, rgba(29,26,43,.07) 0 2px, transparent 2px 22px), #FFF1B8',
+  dots: 'radial-gradient(#EF9DBA 3px, transparent 3.5px) 0 0 / 24px 24px, #FFF4C7',
+  plain: '#FFF4C7'
+};
+
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    var added = {};
+    Object.keys(DATA).forEach(function (c) { added[c] = []; });
+    this.state = {
+      tab: { top: 'tops', bottom: 'skirts', acc: 'jackets' },
+      off: {},
+      pick: { top: DATA.tops[1], bottom: DATA.skirts[0] },
+      acc: { bags: DATA.bags[1] },
+      added: added,
+      saved: [],
+      wallImg: null
+    };
+  }
+  componentDidMount() { var self = this; this._t = setInterval(function () { self.forceUpdate(); }, 30000); }
+  componentWillUnmount() { clearInterval(this._t); }
+  items(c) { return DATA[c].concat(this.state.added[c] || []); }
+  dec(it) {
+    if (!it) return null;
+    return Object.assign({}, it, { d: D[it.shape], hasImg: !!it.img, noImg: !it.img });
+  }
+  isOn(key, cat, it) {
+    var cur = key === 'acc' ? this.state.acc[cat] : this.state.pick[key];
+    return !!cur && cur.id === it.id;
+  }
+  choose(key, cat, it) {
+    if (key === 'acc') {
+      this.setState(function (s) {
+        var cur = s.acc[cat];
+        var acc = Object.assign({}, s.acc);
+        acc[cat] = cur && cur.id === it.id ? null : it;
+        return { acc: acc };
+      });
+    } else {
+      this.setState(function (s) {
+        var pick = Object.assign({}, s.pick);
+        pick[key] = it;
+        return { pick: pick };
+      });
+    }
+  }
+  upload(key, cat, e) {
+    var input = e.target;
+    var f = input.files && input.files[0];
+    if (!f) return;
+    var it = { id: 'u' + Date.now(), cat: cat, name: f.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'My item', img: URL.createObjectURL(f), color: '#FFFFFF', shape: SHAPE[cat] };
+    this.setState(function (s) {
+      var list = (s.added[cat] || []).concat([it]);
+      var L = DATA[cat].length + list.length;
+      var added = Object.assign({}, s.added); added[cat] = list;
+      var off = Object.assign({}, s.off); off[cat] = Math.max(0, L - 3);
+      var next = { added: added, off: off };
+      if (key === 'acc') { next.acc = Object.assign({}, s.acc); next.acc[cat] = it; }
+      else { next.pick = Object.assign({}, s.pick); next.pick[key] = it; }
+      return next;
+    });
+    input.value = '';
+  }
+  section(key, tabs) {
+    var self = this;
+    var cat = this.state.tab[key];
+    var list = this.items(cat);
+    var n = list.length;
+    var off = (((this.state.off[cat] || 0) % n) + n) % n;
+    var vis = [];
+    for (var i = 0; i < Math.min(3, n); i++) vis.push(list[(off + i) % n]);
+    var accent = this.props.accent ?? '#5B4BC4';
+    return {
+      tabs: tabs.map(function (t) {
+        var on = t === cat;
+        return {
+          label: LABELS[t], pressed: on ? 'true' : 'false', bg: on ? accent : '#D4D0E0', fg: on ? '#FFFFFF' : INK,
+          bevel: on ? 'rgba(0,0,0,.45) rgba(255,255,255,.85) rgba(255,255,255,.85) rgba(0,0,0,.45)' : 'rgba(255,255,255,.85) rgba(0,0,0,.45) rgba(0,0,0,.45) rgba(255,255,255,.85)',
+          pick: function () { self.setState(function (s) { var tab = Object.assign({}, s.tab); tab[key] = t; return { tab: tab }; }); }
+        };
+      }),
+      items: vis.map(function (it) {
+        var sel = self.isOn(key, cat, it);
+        return Object.assign(self.dec(it), {
+          sel: sel, pressed: sel ? 'true' : 'false', border: sel ? accent : INK, bg: sel ? '#EEEAFB' : '#FFFFFF',
+          pick: function () { self.choose(key, cat, it); }
+        });
+      }),
+      prev: function () { self.setState(function (s) { var o = Object.assign({}, s.off); o[cat] = (o[cat] || 0) - 1; return { off: o }; }); },
+      next: function () { self.setState(function (s) { var o = Object.assign({}, s.off); o[cat] = (o[cat] || 0) + 1; return { off: o }; }); },
+      pos: n + ' ' + LABELS[cat].toLowerCase() + ' in your closet',
+      add: function (e) { self.upload(key, cat, e); }
+    };
+  }
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var accent = this.props.accent ?? '#5B4BC4';
+    var wp = this.props.wallpaper ?? 'plaid';
+    var extras = ACC.map(function (c) { return s.acc[c]; }).filter(Boolean).map(function (it) {
+      return Object.assign(self.dec(it), { remove: function () { self.choose('acc', it.cat, it); } });
+    });
+    var pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+    var total = Object.keys(DATA).reduce(function (n, c) { return n + self.items(c).length; }, 0);
+    return {
+      accent: accent,
+      clock: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: { items: total, wearing: (s.pick.top ? 1 : 0) + (s.pick.bottom ? 1 : 0) + extras.length },
+      wall: s.wallImg ? '#1D1A2B' : (WALL[wp] || WALL.plaid),
+      wallImg: s.wallImg,
+      hasWallImg: !!s.wallImg,
+      setWall: function (e) {
+        var input = e.target; var f = input.files && input.files[0];
+        if (!f) return;
+        self.setState({ wallImg: URL.createObjectURL(f) });
+        input.value = '';
+      },
+      resetWall: function () { self.setState({ wallImg: null }); },
+      top: this.section('top', TOPS),
+      bottom: this.section('bottom', BOTTOMS),
+      acc: this.section('acc', ACC),
+      out: {
+        top: this.dec(s.pick.top), hasTop: !!s.pick.top, noTop: !s.pick.top,
+        bottom: this.dec(s.pick.bottom), hasBottom: !!s.pick.bottom, noBottom: !s.pick.bottom,
+        extras: extras, hasExtras: extras.length > 0, noExtras: extras.length === 0
+      },
+      shuffle: function () {
+        var acc = {};
+        ACC.forEach(function (c) { acc[c] = Math.random() < 0.35 ? pick(self.items(c)) : null; });
+        self.setState({ pick: { top: pick(self.items(pick(TOPS))), bottom: pick(self.items(pick(BOTTOMS))) }, acc: acc });
+      },
+      save: function () {
+        self.setState(function (st) {
+          var look = { top: st.pick.top, bottom: st.pick.bottom, acc: Object.assign({}, st.acc) };
+          return { saved: [look].concat(st.saved).slice(0, 6) };
+        });
+      },
+      clear: function () { self.setState({ pick: { top: null, bottom: null }, acc: {} }); },
+      saved: s.saved.map(function (o, i) {
+        var count = ACC.filter(function (c) { return o.acc[c]; }).length;
+        return {
+          n: s.saved.length - i,
+          top: self.dec(o.top), hasTop: !!o.top,
+          bottom: self.dec(o.bottom), hasBottom: !!o.bottom,
+          label: count ? '+' + count + ' extra' + (count > 1 ? 's' : '') : 'Look ' + (s.saved.length - i),
+          wear: function () { self.setState({ pick: { top: o.top, bottom: o.bottom }, acc: Object.assign({}, o.acc) }); }
+        };
+      }),
+      savedCount: s.saved.length,
+      hasSaved: s.saved.length > 0,
+      noSaved: s.saved.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>
