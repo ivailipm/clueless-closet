@@ -31,6 +31,7 @@ paths, sample data and behaviour from them, and rebuild everything as normal Rea
   extras (Jackets, Bags, Scarves, Gloves, Hats)
 - Each row: category tabs, a carousel showing 3 items with ◀◀ ▶▶ arrows (wraps around), and "+ Add your own" upload
 - Click an item to wear it; extras toggle on/off, one per extras category
+- Top half layers: one tee, shirt and sweater at once (back to front), each toggled on/off
 - Side panel builds the outfit (top, bottom, extras) with Shuffle, Save outfit, Clear, and saved looks you can re-wear
 
 ## Dashboard screen
