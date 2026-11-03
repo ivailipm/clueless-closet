@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Hanger } from './icons';
-import { pickImage } from './image';
 import { MenuBar, type Menu, type MenuItem } from './MenuBar';
-import { exportBackup, importBackup, usePersistentState } from './storage';
-import { WALLPAPERS, type WallpaperName } from './theme';
-
-type Wallpaper = { pattern: WallpaperName; image: string | null };
+import { exportBackup, importBackup } from './storage';
+import type { WallpaperName } from './theme';
+import { useWallpaper, WallpaperLayer, type Slot } from './wallpaper';
 
 function useClock() {
   const fmt = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -46,10 +44,15 @@ type Props = {
 /** 2000s-style desktop: wallpaper, window frame with title + menu bar, and a taskbar with a clock. */
 export function OsWindow({ app, title, subtitle, menus, children, footer }: Props) {
   const clock = useClock();
-  const [wall, setWall] = usePersistentState<Wallpaper>('wallpaper', { pattern: 'plaid', image: null }, () =>
-    alert('That wallpaper is too big to remember. Try a smaller photo.'),
-  );
+  const wp = useWallpaper(app);
+  const [wallMsg, setWallMsg] = useState('');
+  useEffect(() => {
+    if (!wallMsg) return;
+    const t = setTimeout(() => setWallMsg(''), 6000);
+    return () => clearTimeout(t);
+  }, [wallMsg]);
   const wallInput = useRef<HTMLInputElement>(null);
+  const slotInputs = { landscape: useRef<HTMLInputElement>(null), portrait: useRef<HTMLInputElement>(null) };
   const backupInput = useRef<HTMLInputElement>(null);
   const aboutRef = useRef<HTMLDialogElement>(null);
 
@@ -70,15 +73,35 @@ export function OsWindow({ app, title, subtitle, menus, children, footer }: Prop
         ...PATTERNS.map(
           ([p, label]): MenuItem => ({
             label,
-            checked: !wall.image && wall.pattern === p,
-            onSelect: () => setWall({ pattern: p, image: null }),
+            checked: !wp.showingPhoto && wp.wall.pattern === p,
+            onSelect: () => wp.setPattern(p),
           }),
         ),
-        { label: 'Photo wallpaper…', checked: !!wall.image, onSelect: () => wallInput.current?.click() },
+        { label: 'My photo wallpaper', checked: wp.showingPhoto, disabled: !wp.hasPhoto, onSelect: wp.showPhoto },
+        { separator: true },
+        { label: 'Upload desktop photo (horizontal)…', onSelect: () => slotInputs.landscape.current?.click() },
+        { label: 'Upload phone photo (vertical)…', onSelect: () => slotInputs.portrait.current?.click() },
+        { label: 'Remove desktop photo', disabled: !wp.wall.landscape, onSelect: () => wp.remove('landscape') },
+        { label: 'Remove phone photo', disabled: !wp.wall.portrait, onSelect: () => wp.remove('portrait') },
       ],
     },
     Help: { post: [{ label: `About ${title}`, onSelect: () => aboutRef.current?.showModal() }] },
   };
+  const onWallFile = (slot?: Slot) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const f = input.files?.[0];
+    input.value = '';
+    if (!f) return;
+    const saved = await wp.upload(f, slot);
+    if (!saved) return;
+    const other = saved === 'landscape' ? wp.wall.portrait : wp.wall.landscape;
+    setWallMsg(
+      saved === 'landscape'
+        ? `Desktop wallpaper set${other ? '' : ' (also used on phones until you add a vertical photo)'}`
+        : `Phone wallpaper set${other ? '' : ' (also used on computers until you add a horizontal photo)'}`,
+    );
+  };
+
   const order = ['File', 'Edit', 'View'];
   const allMenus: Menu[] = [...menus];
   for (const label of Object.keys(shared)) {
@@ -98,8 +121,8 @@ export function OsWindow({ app, title, subtitle, menus, children, footer }: Prop
   });
 
   return (
-    <div className="desktop" style={{ background: wall.image ? '#1D1A2B' : WALLPAPERS[wall.pattern] }}>
-      {wall.image && <img src={wall.image} alt="" className="wall-img" />}
+    <div className="desktop">
+      <WallpaperLayer wall={wp.wall} photo={wp.showingPhoto} />
 
       <div className="window">
         <header className="titlebar">
@@ -118,18 +141,42 @@ export function OsWindow({ app, title, subtitle, menus, children, footer }: Prop
         <div className="menubar">
           <MenuBar menus={merged} />
           <div className="menu-tools">
-            <label className="upload px">
+            {wallMsg && (
+              <span className="sunk wall-msg" role="status">
+                {wallMsg}
+              </span>
+            )}
+            <label className="upload px" title="Horizontal photos are used on computers, vertical photos on phones">
               Change wallpaper
               <input
                 ref={wallInput}
                 type="file"
                 accept="image/*"
                 className="sr"
-                onChange={pickImage(1600, (url) => setWall((w) => ({ ...w, image: url })))}
+                onChange={onWallFile()}
               />
             </label>
-            {wall.image && (
-              <button type="button" className="btn btn-sm" onClick={() => setWall((w) => ({ ...w, image: null }))}>
+            {(['landscape', 'portrait'] as Slot[]).map((slot) => (
+              <input
+                key={slot}
+                ref={slotInputs[slot]}
+                type="file"
+                accept="image/*"
+                className="sr"
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={onWallFile(slot)}
+              />
+            ))}
+            {wp.hasPhoto && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => {
+                  wp.removeAll();
+                  setWallMsg('');
+                }}
+              >
                 Reset
               </button>
             )}

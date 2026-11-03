@@ -3,6 +3,18 @@
  * PNGs keep transparency (cut-out clothing photos); everything else becomes JPEG.
  */
 export async function fileToDataUrl(file: File, maxSide: number): Promise<string> {
+  return (await downscale(file, maxSide)).url;
+}
+
+/**
+ * Downscale an image file. Returns the data URL and its final size.
+ * `jpeg` forces JPEG (smaller), for photos that never need transparency.
+ */
+export async function downscale(
+  file: File,
+  maxSide: number,
+  jpeg = false,
+): Promise<{ url: string; width: number; height: number }> {
   const src = await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));
@@ -22,10 +34,11 @@ export async function fileToDataUrl(file: File, maxSide: number): Promise<string
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return src;
+  if (!ctx) return { url: src, width: img.naturalWidth, height: img.naturalHeight };
   ctx.drawImage(img, 0, 0, w, h);
-  const keepAlpha = file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif';
-  return keepAlpha ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
+  const keepAlpha = !jpeg && (file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif');
+  const url = keepAlpha ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.82);
+  return { url, width: w, height: h };
 }
 
 /** Handler for <input type="file">: reads the first file, then clears the input. */
