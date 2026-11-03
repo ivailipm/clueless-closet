@@ -1,6 +1,3 @@
-import lace from './lace.svg';
-import leopard from './leopard.svg';
-
 export const INK = '#1D1A2B';
 export const ACCENT = '#5B4BC4';
 export const PINK = '#C2255C';
@@ -26,14 +23,3 @@ export const SHAPES = {
 } as const;
 
 export type ShapeName = keyof typeof SHAPES;
-
-export type WallpaperName = 'plaid' | 'dots' | 'plain' | 'lace' | 'leopard';
-
-export const WALLPAPERS: Record<WallpaperName, string> = {
-  plaid:
-    'repeating-linear-gradient(0deg, rgba(194,37,92,.13) 0 14px, transparent 14px 44px), repeating-linear-gradient(90deg, rgba(194,37,92,.13) 0 14px, transparent 14px 44px), repeating-linear-gradient(0deg, rgba(29,26,43,.07) 0 2px, transparent 2px 22px), repeating-linear-gradient(90deg, rgba(29,26,43,.07) 0 2px, transparent 2px 22px), #FFF1B8',
-  dots: 'radial-gradient(#EF9DBA 3px, transparent 3.5px) 0 0 / 24px 24px, #FFF4C7',
-  plain: '#FFF4C7',
-  lace: `url('${lace}') 0 0 / 280px 280px, #F3E6DA`,
-  leopard: `url('${leopard}') 0 0 / 150px 150px, #D3A065`,
-};

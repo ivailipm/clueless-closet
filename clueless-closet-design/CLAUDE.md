@@ -23,9 +23,11 @@ paths, sample data and behaviour from them, and rebuild everything as normal Rea
 - Window frame with gradient title bar, decorative _ □ x buttons, File/Edit/View menu bar, sunken content area,
   status bar, and a taskbar with a live clock and links between the two screens
 - Raised bevel buttons: light top-left border, dark bottom-right border, swapped when pressed or active
-- Wallpaper: plaid (default), dots, plain, red lace, leopard, or a photo the user uploads
-- Inside the window: leopard print (default), red lace, or a photo. Lace is `src/shared/lace.svg`, drawn by
-  `scripts/make-lace.py`
+- Backgrounds: two dropdowns, Outside (wallpaper behind the window) and Inside (area inside it), over the same
+  pattern list in `src/shared/patterns.ts`: classics (plaid, dots, plain, leopard, drawn red lace) plus photo
+  wallpapers in `public/patterns` (mirrored 2×2 tiles so they repeat seamlessly; the rug is shown once, "cover").
+  Each also takes an uploaded photo: horizontal for computers, vertical for phones. Defaults: plaid outside,
+  leopard inside. To add a wallpaper: put a tile in `public/patterns` and add a `photo(...)` line to the list
 
 ## Closet screen
 

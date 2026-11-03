@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Hanger } from './icons';
 import { MenuBar, type Menu, type MenuItem } from './MenuBar';
 import { exportBackup, importBackup } from './storage';
-import type { WallpaperName } from './theme';
+import { PHOTO, type BgControl } from './BackgroundPicker';
 import { useWallpaper, WallpaperLayer, type Slot } from './wallpaper';
 
 function useClock() {
@@ -21,16 +21,8 @@ const APPS = [
   { to: '/dashboard', label: 'Code Closet.exe', id: 'dashboard' },
 ] as const;
 
-const PATTERNS: [WallpaperName, string][] = [
-  ['plaid', 'Plaid wallpaper'],
-  ['dots', 'Dots wallpaper'],
-  ['plain', 'Plain wallpaper'],
-  ['lace', 'Red lace wallpaper'],
-  ['leopard', 'Leopard wallpaper'],
-];
-
 /** Things a screen can trigger from its own buttons. */
-export type WindowApi = { openImport: () => void; openAbout: () => void; openWallpaper: () => void };
+export type WindowApi = { openImport: () => void; openAbout: () => void; outside: BgControl };
 
 type Slot2<T> = T | ((api: WindowApi) => T);
 
@@ -90,15 +82,7 @@ export function OsWindow({
     },
     View: {
       pre: [
-        ...PATTERNS.map(
-          ([p, label]): MenuItem => ({
-            label,
-            checked: !wp.showingPhoto && wp.wall.pattern === p,
-            onSelect: () => wp.setPattern(p),
-          }),
-        ),
         { label: 'My photo wallpaper', checked: wp.showingPhoto, disabled: !wp.hasPhoto, onSelect: wp.showPhoto },
-        { separator: true },
         { label: 'Change wallpaper…', onSelect: () => wallInput.current?.click() },
         { label: 'Upload desktop photo (horizontal)…', onSelect: () => slotInputs.landscape.current?.click() },
         { label: 'Upload phone photo (vertical)…', onSelect: () => slotInputs.portrait.current?.click() },
@@ -144,7 +128,12 @@ export function OsWindow({
   const api: WindowApi = {
     openImport: () => backupInput.current?.click(),
     openAbout: () => aboutRef.current?.showModal(),
-    openWallpaper: () => wallInput.current?.click(),
+    outside: {
+      value: wp.showingPhoto ? PHOTO : wp.wall.pattern,
+      hasPhoto: wp.hasPhoto,
+      choose: (v) => (v === PHOTO ? wp.showPhoto() : wp.setPattern(v)),
+      upload: () => wallInput.current?.click(),
+    },
   };
   const render = (x: Slot2<ReactNode>) => (typeof x === 'function' ? x(api) : x);
   const fashion = variant === 'fashion';

@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MenuItem } from './MenuBar';
-import { useWallpaper, WallpaperLayer, type Slot } from './wallpaper';
-
-/** Patterns offered for the area inside the window (leopard is the CSS default under everything). */
-export type InsidePattern = 'leopard' | 'lace';
+import { PHOTO, type BgControl } from './BackgroundPicker';
+import { useWallpaper, WallpaperLayer, type Slot, type Wallpaper } from './wallpaper';
 
 /**
- * Background for the leopard area inside a fashion window: leopard print, red lace, or your photo
- * (horizontal photos are used on computers, vertical ones on phones). `node` goes first inside `.fx-content`.
+ * Before patterns could be picked here, this slot stored 'plaid' (unused) while showing leopard,
+ * or 'lace'. Version 2 stores the real pattern id.
+ */
+const upgrade = (w: Wallpaper): Wallpaper => (w.v ? w : { ...w, pattern: w.pattern === 'lace' ? 'lace' : 'leopard', v: 2 });
+
+/**
+ * Background for the area inside a fashion window: any pattern from patterns.ts (leopard by default) or your
+ * photo (horizontal photos are used on computers, vertical ones on phones). `node` goes first inside `.fx-content`.
  */
 export function useInsideBackground(screen: string) {
-  const bg = useWallpaper(`${screen}-inside`, false, 'leopard');
-  // Slots saved before lace existed hold 'plaid'; they always showed leopard.
-  const pattern: InsidePattern = bg.wall.pattern === 'lace' ? 'lace' : 'leopard';
+  const bg = useWallpaper(`${screen}-inside`, false, 'leopard', upgrade);
   const inputs = {
     auto: useRef<HTMLInputElement>(null),
     landscape: useRef<HTMLInputElement>(null),
@@ -43,10 +45,8 @@ export function useInsideBackground(screen: string) {
   const openUpload = () => inputs.auto.current?.click();
 
   const menuItems: MenuItem[] = [
-    { label: 'Inside: leopard print', checked: !bg.showingPhoto && pattern === 'leopard', onSelect: () => bg.setPattern('leopard') },
-    { label: 'Inside: red lace', checked: !bg.showingPhoto && pattern === 'lace', onSelect: () => bg.setPattern('lace') },
     { label: 'Inside: my photo', checked: bg.showingPhoto, disabled: !bg.hasPhoto, onSelect: bg.showPhoto },
-    { label: 'Change inside background…', onSelect: openUpload },
+    { label: 'Inside: upload a photo…', onSelect: openUpload },
     { label: 'Inside: upload computer photo (horizontal)…', onSelect: () => inputs.landscape.current?.click() },
     { label: 'Inside: upload phone photo (vertical)…', onSelect: () => inputs.portrait.current?.click() },
     { label: 'Inside: remove photos', disabled: !bg.hasPhoto, onSelect: bg.removeAll },
@@ -54,7 +54,7 @@ export function useInsideBackground(screen: string) {
 
   const node = (
     <>
-      {(bg.showingPhoto || pattern === 'lace') && <WallpaperLayer wall={bg.wall} photo={bg.showingPhoto} contained />}
+      <WallpaperLayer wall={bg.wall} photo={bg.showingPhoto} contained fallback="leopard" />
       {(['auto', 'landscape', 'portrait'] as const).map((k) => (
         <input
           key={k}
@@ -75,15 +75,13 @@ export function useInsideBackground(screen: string) {
     </>
   );
 
-  return {
-    node,
-    menuItems,
-    openUpload,
-    showingPhoto: bg.showingPhoto,
-    pattern,
-    /** Show a pattern (and stop showing the photo, which is kept). */
-    setPattern: (p: InsidePattern) => bg.setPattern(p),
+  /** For the Inside dropdown. */
+  const control: BgControl = {
+    value: bg.showingPhoto ? PHOTO : bg.wall.pattern,
     hasPhoto: bg.hasPhoto,
-    showPhoto: bg.showPhoto,
+    choose: (v) => (v === PHOTO ? bg.showPhoto() : bg.setPattern(v)),
+    upload: openUpload,
   };
+
+  return { node, menuItems, control };
 }

@@ -338,6 +338,11 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
 .fx-bg-title {
   align-self: flex-start; font-size: 10px; padding: 3px 8px; color: #FFFFFF; background: var(--fx-navy); border: 1px solid #0B0A2A;
 }
+.bg-picker { display: flex; flex-direction: column; gap: 8px; }
+.bg-pick { display: flex; flex-direction: column; gap: 3px; }
+.bg-pick-label { font-size: 10px; color: var(--fx-text); }
+.fx-side .bg-pick-label { align-self: flex-start; padding: 2px 6px; color: #FFFFFF; background: var(--fx-navy); }
+.bg-pick-select { flex: none; width: 100%; font-size: 13px; }
 .fx-side {
   flex: 0 0 236px; max-width: 236px; min-width: 0; padding: 14px 12px; display: flex; flex-direction: column; gap: 7px;
 }
@@ -589,7 +594,9 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
   .fx-avatar { height: 130px; }
   .fx-namecard { align-self: stretch; justify-content: center; }
   .fx-nav-closet { margin-top: 0; }
-  .fx-bg-group { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+  .fx-bg-group { grid-column: 1 / -1; }
+  .fx-bg-group .bg-picker { flex-direction: row; }
+  .fx-bg-group .bg-pick { flex: 1; min-width: 0; }
   .fx-bg-title { grid-column: 1 / -1; justify-self: start; }
   .fx-main { padding: 8px; }
   .fx-top { grid-template-columns: 1fr; justify-items: center; }

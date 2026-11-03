@@ -4,6 +4,7 @@ import { Icon } from '../dashboard/icons';
 import { Panel } from '../dashboard/parts';
 import { ClothingArt } from '../shared/icons';
 import { fileToDataUrl } from '../shared/image';
+import { BackgroundPicker } from '../shared/BackgroundPicker';
 import { useInsideBackground } from '../shared/InsideBackground';
 import { OsWindow } from '../shared/OsWindow';
 import { HANDLE } from '../dashboard/data';
@@ -270,16 +271,6 @@ export function ClosetPage() {
             <button type="button" className="fx-tool px" onClick={() => startAdd(s.tab.top)}>
               <Icon name="camera" size={15} /> Add clothes
             </button>
-            <button type="button" className="fx-tool px" onClick={inside.openUpload} title="Photo for the leopard area">
-              <Icon name="sparkle" size={15} /> Background
-            </button>
-            <button
-              type="button"
-              className="fx-tool px"
-              onClick={() => inside.setPattern(inside.pattern === 'lace' && !inside.showingPhoto ? 'leopard' : 'lace')}
-            >
-              {inside.pattern === 'lace' && !inside.showingPhoto ? 'Leopard print' : 'Red lace'}
-            </button>
             <Link to="/dashboard" className="fx-tool px">
               <Icon name="repo" size={15} /> Code Closet
             </Link>
@@ -287,6 +278,8 @@ export function ClosetPage() {
         </>
       }
     >
+      {(api) => (
+      <>
       <div className="fx-content">
         {inside.node}
         <input ref={fileInput} type="file" accept="image/*" className="sr" tabIndex={-1} aria-hidden="true" onChange={onFile} />
@@ -453,6 +446,12 @@ export function ClosetPage() {
             )}
           </Panel>
 
+          <Panel id="h-bg" title="Backgrounds" icon="sparkle">
+            <div className="fx-pad" style={{ paddingBottom: 12 }}>
+              <BackgroundPicker outside={api.outside} inside={inside.control} />
+            </div>
+          </Panel>
+
           <Panel id="h-mine" title="My uploads" icon="camera">
             <p className="fx-empty" style={{ paddingBottom: 6 }}>
               {s.added.length
@@ -502,6 +501,8 @@ export function ClosetPage() {
       />
       <CategoryDialog draft={catDraft} onSave={saveCategory} onDelete={deleteCategory} onClose={() => setCatDraft(null)} />
       <ClothesDialog draft={draft} cat={cats} onSave={saveDraft} onRemove={(id) => removeOwn({ id, name: get(id)?.name ?? 'this' })} onClose={() => setDraft(null)} />
+      </>
+      )}
     </OsWindow>
   );
 }

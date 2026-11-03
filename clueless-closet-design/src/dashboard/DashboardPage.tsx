@@ -5,6 +5,7 @@ import { OutfitThumb } from '../closet/OutfitThumb';
 import { Hanger } from '../shared/icons';
 import { pickImage } from '../shared/image';
 import { OsWindow } from '../shared/OsWindow';
+import { BackgroundPicker } from '../shared/BackgroundPicker';
 import { useInsideBackground } from '../shared/InsideBackground';
 import { HANDLE, NAV, type View } from './data';
 import { Icon, type IconName } from './icons';
@@ -204,40 +205,7 @@ export function DashboardPage() {
             <span id="bg-title" className="fx-bg-title px">
               Backgrounds
             </span>
-            <button
-              type="button"
-              className="fx-nav px"
-              title="Photo for this leopard area. Horizontal photos are used on computers, vertical on phones."
-              onClick={() => inside.openUpload()}
-            >
-              <Icon name="camera" size={16} />
-              <span className="fx-nav-label">Inside photo</span>
-            </button>
-            <button
-              type="button"
-              className="fx-nav px"
-              onClick={() => inside.setPattern(inside.pattern === 'lace' && !inside.showingPhoto ? 'leopard' : 'lace')}
-            >
-              <Icon name="sparkle" size={16} />
-              <span className="fx-nav-label">
-                {inside.pattern === 'lace' && !inside.showingPhoto ? 'Leopard print' : 'Red lace'}
-              </span>
-            </button>
-            {inside.hasPhoto && !inside.showingPhoto && (
-              <button type="button" className="fx-nav px" onClick={inside.showPhoto}>
-                <Icon name="eye" size={16} />
-                <span className="fx-nav-label">Show my photo</span>
-              </button>
-            )}
-            <button
-              type="button"
-              className="fx-nav px"
-              title="Wallpaper behind the window. Horizontal photos are used on computers, vertical on phones."
-              onClick={api.openWallpaper}
-            >
-              <Icon name="home" size={16} />
-              <span className="fx-nav-label">Wallpaper behind</span>
-            </button>
+            <BackgroundPicker outside={api.outside} inside={inside.control} />
           </div>
         </nav>
 
