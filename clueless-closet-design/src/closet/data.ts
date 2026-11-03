@@ -52,8 +52,16 @@ export const BUILT_IN = Object.fromEntries(
   ]),
 ) as Record<Category, Item[]>;
 
-/** Ids of worn items. Ids (not whole items) keep saved looks small in localStorage. */
-export type Look = { top: string | null; bottom: string | null; acc: Partial<Record<Category, string | null>> };
+/** Top-half layers, back to front: tee under shirt under sweater. */
+export const LAYER_ORDER: Category[] = ['tops', 'shirts', 'sweaters'];
+
+type Slots = Partial<Record<Category, string | null>>;
+
+/**
+ * Ids of worn items. Ids (not whole items) keep saved looks small in localStorage.
+ * `layers` holds one id per top category so they can be layered; `acc` one per extras category.
+ */
+export type Look = { layers: Slots; bottom: string | null; acc: Slots };
 
 export type ClosetState = {
   tab: Record<RowKey, Category>;
@@ -66,10 +74,29 @@ export type ClosetState = {
 export const INITIAL_CLOSET: ClosetState = {
   tab: { top: 'tops', bottom: 'skirts', acc: 'jackets' },
   off: {},
-  wearing: { top: 'tops1', bottom: 'skirts0', acc: { bags: 'bags1' } },
+  wearing: { layers: { tops: 'tops1' }, bottom: 'skirts0', acc: { bags: 'bags1' } },
   added: [],
   saved: [],
 };
 
 export const CLOSET_KEY = 'closet';
 export const MAX_SAVED = 6;
+
+/** Older saves kept a single `top` id; move it into its category's layer slot. */
+export function migrateCloset(st: ClosetState): ClosetState {
+  const catOf = (id: string): Category | undefined =>
+    st.added?.find((a) => a.id === id)?.cat ??
+    (Object.keys(BUILT_IN) as Category[]).find((c) => BUILT_IN[c].some((i) => i.id === id));
+  const fix = <L extends Look>(l: L & { top?: string | null }): L => {
+    if (l.layers) return l;
+    const { top, ...rest } = l;
+    const cat = top ? catOf(top) : undefined;
+    return { ...rest, layers: cat ? { [cat]: top } : {} } as unknown as L;
+  };
+  return { ...st, wearing: fix(st.wearing), saved: (st.saved ?? []).map(fix) };
+}
+
+/** Worn top-half items, back to front. */
+export function layerIds(l: Look): string[] {
+  return LAYER_ORDER.map((c) => l.layers?.[c]).filter((x): x is string => !!x);
+}

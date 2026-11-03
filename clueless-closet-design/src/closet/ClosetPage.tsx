@@ -4,9 +4,11 @@ import { OsWindow } from '../shared/OsWindow';
 import { usePersistentState } from '../shared/storage';
 import { CategoryRow } from './CategoryRow';
 import {
-  BOTTOMS, BUILT_IN, CLOSET_KEY, EXTRAS, INITIAL_CLOSET, MAX_SAVED, ROWS, SHAPE, TOPS,
+  BOTTOMS, BUILT_IN, CLOSET_KEY, EXTRAS, INITIAL_CLOSET, MAX_SAVED, ROWS, SHAPE,
+  layerIds, migrateCloset,
   type Category, type ClosetState, type Item, type Look, type RowKey,
 } from './data';
+import { Layers } from './Layers';
 
 const rand = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
@@ -22,6 +24,7 @@ function Piece({ item, w, h }: { item: Item | null; w: number; h: number }) {
 export function ClosetPage() {
   const [s, setS] = usePersistentState<ClosetState>(CLOSET_KEY, INITIAL_CLOSET, () =>
     alert('Your closet is full: the browser could not store that photo. Try a smaller image.'),
+    migrateCloset,
   );
 
   const itemsOf = useMemo(() => {
@@ -39,21 +42,24 @@ export function ClosetPage() {
   }, [itemsOf]);
   const get = (id: string | null | undefined) => (id ? byId.get(id) ?? null : null);
 
-  const top = get(s.wearing.top);
+  const resolve = (ids: string[]) => ids.map(get).filter((x): x is Item => !!x);
+  const layers = resolve(layerIds(s.wearing));
   const bottom = get(s.wearing.bottom);
   const extras = EXTRAS.map((c) => get(s.wearing.acc[c])).filter((x): x is Item => !!x);
   const total = Object.values(itemsOf).reduce((n, l) => n + l.length, 0);
 
+  // Top-half pieces live in `layers`, extras in `acc`: one per category, tap again to take off.
+  const slotOf = (key: RowKey) => (key === 'top' ? 'layers' : 'acc') as 'layers' | 'acc';
+
   const isWorn = (key: RowKey) => (it: Item) =>
-    key === 'acc' ? s.wearing.acc[it.cat] === it.id : s.wearing[key] === it.id;
+    key === 'bottom' ? s.wearing.bottom === it.id : s.wearing[slotOf(key)][it.cat] === it.id;
 
   const wear = (key: RowKey, it: Item) =>
     setS((st) => {
-      if (key === 'acc') {
-        const cur = st.wearing.acc[it.cat];
-        return { ...st, wearing: { ...st.wearing, acc: { ...st.wearing.acc, [it.cat]: cur === it.id ? null : it.id } } };
-      }
-      return { ...st, wearing: { ...st.wearing, [key]: it.id } };
+      if (key === 'bottom') return { ...st, wearing: { ...st.wearing, bottom: it.id } };
+      const slot = slotOf(key);
+      const cur = st.wearing[slot][it.cat];
+      return { ...st, wearing: { ...st.wearing, [slot]: { ...st.wearing[slot], [it.cat]: cur === it.id ? null : it.id } } };
     });
 
   const addOwn = (key: RowKey, cat: Category, img: string, file: File) =>
@@ -68,7 +74,9 @@ export function ClosetPage() {
       };
       const count = BUILT_IN[cat].length + st.added.filter((a) => a.cat === cat).length + 1;
       const wearing: Look =
-        key === 'acc' ? { ...st.wearing, acc: { ...st.wearing.acc, [cat]: it.id } } : { ...st.wearing, [key]: it.id };
+        key === 'bottom'
+          ? { ...st.wearing, bottom: it.id }
+          : { ...st.wearing, [slotOf(key)]: { ...st.wearing[slotOf(key)], [cat]: it.id } };
       return {
         ...st,
         added: [...st.added, it],
@@ -82,18 +90,15 @@ export function ClosetPage() {
   const purge = (ids: Set<string>) =>
     setS((st) => {
       const drop = (id: string | null | undefined) => (id && ids.has(id) ? null : id ?? null);
-      const clean = (l: Look): Look => ({
-        top: drop(l.top),
-        bottom: drop(l.bottom),
-        acc: Object.fromEntries(Object.entries(l.acc).map(([c, id]) => [c, drop(id)])),
-      });
+      const dropAll = (slots: Look['acc']) => Object.fromEntries(Object.entries(slots).map(([c, id]) => [c, drop(id)]));
+      const clean = (l: Look): Look => ({ layers: dropAll(l.layers), bottom: drop(l.bottom), acc: dropAll(l.acc) });
       return {
         ...st,
         added: st.added.filter((a) => !ids.has(a.id)),
         wearing: clean(st.wearing),
         saved: st.saved
           .map((o) => ({ ...clean(o), id: o.id }))
-          .filter((o) => o.top || o.bottom || Object.values(o.acc).some(Boolean)),
+          .filter((o) => layerIds(o).length || o.bottom || Object.values(o.acc).some(Boolean)),
       };
     });
 
@@ -106,16 +111,25 @@ export function ClosetPage() {
     setS((st) => {
       const acc: Look['acc'] = {};
       EXTRAS.forEach((c) => (acc[c] = Math.random() < 0.35 ? rand(itemsOf[c]).id : null));
-      return { ...st, wearing: { top: rand(itemsOf[rand(TOPS)]).id, bottom: rand(itemsOf[rand(BOTTOMS)]).id, acc } };
+      // A tee or shirt as the base, sometimes both, sometimes a sweater on top.
+      const layers: Look['layers'] = {};
+      const base = rand<Category>(['tops', 'shirts']);
+      layers[base] = rand(itemsOf[base]).id;
+      if (base === 'shirts' && Math.random() < 0.3) layers.tops = rand(itemsOf.tops).id;
+      if (Math.random() < 0.4) layers.sweaters = rand(itemsOf.sweaters).id;
+      return { ...st, wearing: { layers, bottom: rand(itemsOf[rand(BOTTOMS)]).id, acc } };
     });
 
   const save = () =>
     setS((st) => ({
       ...st,
-      saved: [{ ...st.wearing, acc: { ...st.wearing.acc }, id: String(Date.now()) }, ...st.saved].slice(0, MAX_SAVED),
+      saved: [
+        { layers: { ...st.wearing.layers }, bottom: st.wearing.bottom, acc: { ...st.wearing.acc }, id: String(Date.now()) },
+        ...st.saved,
+      ].slice(0, MAX_SAVED),
     }));
 
-  const clear = () => setS((st) => ({ ...st, wearing: { top: null, bottom: null, acc: {} } }));
+  const clear = () => setS((st) => ({ ...st, wearing: { layers: {}, bottom: null, acc: {} } }));
 
   return (
     <OsWindow
@@ -134,6 +148,11 @@ export function ClosetPage() {
           label: 'Edit',
           items: [
             { label: 'Shuffle outfit', onSelect: shuffle },
+            {
+              label: 'Take off all layers',
+              disabled: layers.length === 0,
+              onSelect: () => setS((st) => ({ ...st, wearing: { ...st.wearing, layers: {} } })),
+            },
             {
               label: 'Take off all extras',
               disabled: extras.length === 0,
@@ -163,7 +182,7 @@ export function ClosetPage() {
       footer={
         <>
           <span className="sunk grow">{total} items in closet</span>
-          <span className="sunk grow">Wearing {(top ? 1 : 0) + (bottom ? 1 : 0) + extras.length} pieces</span>
+          <span className="sunk grow">Wearing {layers.length + (bottom ? 1 : 0) + extras.length} pieces</span>
           <span className="sunk grow">{s.saved.length} saved looks</span>
         </>
       }
@@ -183,7 +202,13 @@ export function ClosetPage() {
                 items={itemsOf[cat]}
                 offset={s.off[cat] ?? 0}
                 isWorn={isWorn(r.key)}
-                toggleHint={r.key === 'acc'}
+                hint={
+                  r.key === 'top'
+                    ? 'layer a tee, shirt and sweater · tap again to take it off'
+                    : r.key === 'acc'
+                      ? 'tap again to take it off'
+                      : undefined
+                }
                 dashed={r.key === 'acc'}
                 onTab={(c) => setS((st) => ({ ...st, tab: { ...st.tab, [r.key]: c } }))}
                 onShift={(d) => setS((st) => ({ ...st, off: { ...st.off, [cat]: (st.off[cat] ?? 0) + d } }))}
@@ -201,10 +226,10 @@ export function ClosetPage() {
           </h2>
 
           <div className="mannequin">
-            {top ? (
+            {layers.length ? (
               <>
-                <Piece item={top} w={180} h={150} />
-                <span className="piece-name">{top.name}</span>
+                <Layers items={layers} w={180} h={150} />
+                <span className="piece-name">{layers.map((l) => l.name).join(' + ')}</span>
               </>
             ) : (
               <div className="empty" style={{ width: 180, height: 150 }}>
@@ -268,7 +293,7 @@ export function ClosetPage() {
               <div className="grid3">
                 {s.saved.map((o, i) => {
                   const n = s.saved.length - i;
-                  const t = get(o.top);
+                  const t = resolve(layerIds(o));
                   const b = get(o.bottom);
                   const count = EXTRAS.filter((c) => get(o.acc[c])).length;
                   return (
@@ -277,11 +302,12 @@ export function ClosetPage() {
                       type="button"
                       className="look"
                       aria-label={`Wear saved look ${n}`}
-                      onClick={() => setS((st) => ({ ...st, wearing: { top: o.top, bottom: o.bottom, acc: { ...o.acc } } }))}
+                      onClick={() =>
+                        setS((st) => ({ ...st, wearing: { layers: { ...o.layers }, bottom: o.bottom, acc: { ...o.acc } } }))
+                      }
                     >
-                      <span style={{ display: 'block', width: '100%', height: 44 }}>
-                        {t && <ClothingArt shape={t.shape} color={t.color} img={t.img} />}
-                      </span>
+                      <Layers items={t} w="100%" h={44} />
+                      {!t.length && <span style={{ display: 'block', height: 44 }} />}
                       <span style={{ display: 'block', width: '100%', height: 48 }}>
                         {b && <ClothingArt shape={b.shape} color={b.color} img={b.img} />}
                       </span>

@@ -12,7 +12,7 @@ type Props = {
   items: Item[];
   offset: number;
   isWorn: (it: Item) => boolean;
-  toggleHint?: boolean;
+  hint?: string;
   dashed?: boolean;
   onTab: (c: Category) => void;
   onShift: (delta: number) => void;
@@ -97,7 +97,7 @@ export function CategoryRow(p: Props) {
 
       <div className="row-foot">
         <span>
-          {n} {LABELS[p.cat].toLowerCase()} in your closet{p.toggleHint ? ' · tap again to take it off' : ''}
+          {n} {LABELS[p.cat].toLowerCase()} in your closet{p.hint ? ` · ${p.hint}` : ''}
         </span>
         <label className="upload px">
           + Add your own

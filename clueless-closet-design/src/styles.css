@@ -211,7 +211,9 @@ button:focus-visible, a:focus-visible, label:focus-within, input:focus-visible, 
   background: #FFFFFF; border: 3px solid var(--ink); padding: 16px; display: flex; flex-direction: column;
   align-items: center; gap: 6px;
 }
-.piece-name { font-size: 13px; font-weight: 600; }
+.layers { position: relative; flex: none; }
+.layer { position: absolute; }
+.piece-name { text-align: center; font-size: 13px; font-weight: 600; }
 .empty {
   display: flex; align-items: center; justify-content: center; border: 2px dashed #8B8798; color: var(--muted); font-size: 13px;
 }

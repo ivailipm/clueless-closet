@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { BUILT_IN, CLOSET_KEY, INITIAL_CLOSET, type ClosetState, type Item } from '../closet/data';
+import { BUILT_IN, CLOSET_KEY, INITIAL_CLOSET, layerIds, migrateCloset, type ClosetState, type Item } from '../closet/data';
+import { Layers } from '../closet/Layers';
 import { ClothingArt, Hanger, Tri } from '../shared/icons';
 import { pickImage } from '../shared/image';
 import { OsWindow } from '../shared/OsWindow';
@@ -21,11 +22,12 @@ function when(at: number) {
 }
 
 /** Outfit of the day = what the closet screen is currently wearing (falls back to the design's look). */
-function useOutfitOfTheDay(): { top: Item; bottom: Item } {
-  const closet = readStored<ClosetState>(CLOSET_KEY, INITIAL_CLOSET);
+function useOutfitOfTheDay(): { top: Item[]; bottom: Item } {
+  const closet = migrateCloset({ ...INITIAL_CLOSET, ...readStored<ClosetState>(CLOSET_KEY, INITIAL_CLOSET) });
   const all = [...Object.values(BUILT_IN).flat(), ...(closet.added ?? [])];
   const find = (id: string | null | undefined) => all.find((i) => i.id === id);
-  const top = find(closet.wearing?.top) ?? BUILT_IN.jackets[1];
+  const layers = layerIds(closet.wearing).map(find).filter((x): x is Item => !!x);
+  const top = layers.length ? layers : [BUILT_IN.jackets[1]];
   const bottom = find(closet.wearing?.bottom) ?? BUILT_IN.skirts[0];
   return { top, bottom };
 }
@@ -422,14 +424,12 @@ export function DashboardPage() {
                   </h2>
                 </div>
                 <div className="ootd">
-                  <div style={{ width: 140, height: 110 }}>
-                    <ClothingArt shape={ootd.top.shape} color={ootd.top.color} img={ootd.top.img} />
-                  </div>
+                  <Layers items={ootd.top} w={140} h={110} />
                   <div style={{ width: 140, height: 90 }}>
                     <ClothingArt shape={ootd.bottom.shape} color={ootd.bottom.color} img={ootd.bottom.img} />
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
-                    {ootd.top.name} + {ootd.bottom.name}
+                    {[...ootd.top, ootd.bottom].map((i) => i.name).join(' + ')}
                   </span>
                   <Link to="/" className="btn" style={{ fontSize: 12 }}>
                     Open in closet

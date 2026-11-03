@@ -29,14 +29,16 @@ export function usePersistentState<T>(
   key: string,
   initial: T | (() => T),
   onQuota?: () => void,
+  /** Upgrade data saved by an older version. */
+  migrate?: (stored: T) => T,
 ): [T, Dispatch<SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
     const fallback = typeof initial === 'function' ? (initial as () => T)() : initial;
     const stored = readStored<T | undefined>(key, undefined);
     if (stored === undefined) return fallback;
     // Merge plain objects so new fields added later get their defaults.
-    if (isPlainObject(fallback) && isPlainObject(stored)) return { ...fallback, ...stored } as T;
-    return stored;
+    const merged = isPlainObject(fallback) && isPlainObject(stored) ? ({ ...fallback, ...stored } as T) : stored;
+    return migrate ? migrate(merged) : merged;
   });
   const quotaRef = useRef(onQuota);
   quotaRef.current = onQuota;
